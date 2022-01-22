@@ -1,0 +1,68 @@
+@font-face{
+	font-family: Inglobal;
+	src: url(":/assets/inglobal.ttf");
+}
+@font-face{
+	font-family: Inglobal;
+	src: url(":/assets/inglobalb.ttf");
+	font-weight: bold;
+}
+
+*{font-family: Inglobal;}
+
+#MainWindow{
+	background: url(":/assets/bg_1.jpg") no-repeat center center cover;
+}
+
+QLineEdit{
+
+	padding: 15px;
+	width: 100%;
+	border-radius: 25px;
+	border: 2px solid transparent;
+	background: rgba(255,255,255,.3);
+	outline: none;
+	font-size: 25px;
+	color: #fff;
+}
+
+QLineEdit:focus{
+	border-color: #fff;
+	background: rgba(255,255,255,.2);
+}
+
+QLineEdit::placeholder{
+	color: #eee;
+}
+
+QPushButton{
+	padding: 5px;
+}
+
+QPushButton{
+	font-family: Inglobal;
+	width: 100%;
+	border-radius: 25px;
+	border: none;
+	background: rgba(76, 173, 173, .5);
+	font-size: 25px;
+	height: 64px;
+	color: #fff;
+}
+
+QPushButton:hover{
+	background: rgba(76, 173, 173, .7);
+}
+
+QLabel{
+	font-family: Inglobal;
+	color: #fff;
+	font-size: 42px;
+	width: 100%;
+}
+
+#nicknames{
+	color: orange;
+	font-weight: bold;
+	font-size: 22px;
+}

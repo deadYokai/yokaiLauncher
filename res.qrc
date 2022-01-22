@@ -1,0 +1,10 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>assets/main.ui</file>
+    <file>assets/bg_1.jpg</file>
+    <file>assets/icon.svg</file>
+    <file>assets/inglobal.ttf</file>
+    <file>assets/inglobalb.ttf</file>
+    <file>assets/style.qss</file>
+</qresource>
+</RCC>
