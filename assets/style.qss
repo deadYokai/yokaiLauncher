@@ -10,8 +10,12 @@
 
 *{font-family: Inglobal;}
 
-#MainWindow{
+#MainWindow, #ClientForm, #tab{
 	background: url(":/assets/bg_1.jpg") no-repeat center center cover;
+}
+
+#tabMenu{
+	background: rgba(0,0,0,.7);
 }
 
 QLineEdit{

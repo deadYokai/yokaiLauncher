@@ -5,23 +5,29 @@
 #include <QUiLoader>
 #include <QFontDatabase>
 #include <QScreen>
+#include <QDebug>
+#include <QObject>
+#include <QVBoxLayout>
 
 using namespace std;
-
-static QWidget *loadUiFile()
+static QWidget *loadUiFile(QString page, QWidget *parent = nullptr)
 {
-	QFile file(":/assets/main.ui");
+	QFile file(":/assets/" + page + ".ui");
 	file.open(QIODevice::ReadOnly);
 
 	QUiLoader loader;
-	return loader.load(&file);
+	QWidget *k;
+	if(parent == nullptr)	k = loader.load(&file);
+	else k = loader.load(&file, parent);
+	file.close();
+	return k;
 }
 
 QString importQss(){
 	QFile file(":/assets/style.qss");
 	file.open(QFile::ReadOnly | QFile::Text);
 	QString styleSheet = QLatin1String(file.readAll());
-
+	file.close();
 	return styleSheet;
 }
 
@@ -35,14 +41,30 @@ int importFonts(){
 	return 1;
 }
 
+MWin::MWin(QWidget *parent) : QWidget(parent)
+{
+	ui_mw = loadUiFile("main", this);
+	ui_enterBtn = findChild<QPushButton*>("enterBtn");
+	mm = findChild<QMainWindow*>("MainWindow");
+	mwCW = findChild<QWidget*>("centralwidget");
+	client_f = loadUiFile("client", this);
+	ui_mw->show();
+	client_f->hide();
+	QMetaObject::connectSlotsByName( this );
+
+}
+
+void MWin::on_enterBtn_clicked(){
+	MWin::client_f->show();
+	MWin::mm->setCentralWidget(MWin::client_f);
+}
+
 int main(int argc, char *argv[])
 {
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 	QApplication app(argc, argv);
 	app.setStyleSheet(importQss());
 	importFonts();
-	QWidget *n = loadUiFile();
-	n->move(QGuiApplication::screens().at(0)->geometry().center() - n->frameGeometry().center());
-	n->show();
+	MWin n;
 	return app.exec();
 }

@@ -72,7 +72,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="enterBtn">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>1</horstretch>
@@ -116,7 +116,7 @@
       </layout>
      </widget>
     </item>
-    <item row="0" column="0" alignment="Qt::AlignTop">
+    <item row="0" column="0">
      <widget class="QWidget" name="widget" native="true">
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
