@@ -1,6 +1,8 @@
 #include <QWidget>
 #include <QMainWindow>
 #include <QPushButton>
+#include <QLabel>
+#include <QLineEdit>
 
 class MWin : public QWidget
 {
@@ -11,6 +13,8 @@ public:
 
 private slots:
     void on_enterBtn_clicked();
+    void on_playBtn_clicked();
+    // void on_enterBtn_clicked();
 
 private:
   QWidget *ui_mw;
@@ -18,7 +22,6 @@ private:
   QWidget *client_f;
   QWidget *mwCW;
   QMainWindow *mm;
-//     QTextEdit *ui_textEdit;
-//     QLineEdit *ui_lineEdit;
-
+  QLineEdit *nicknameBox;
+  QLabel *cNick;
 };

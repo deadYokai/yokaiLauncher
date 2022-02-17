@@ -70,3 +70,62 @@ QLabel{
 	font-weight: bold;
 	font-size: 22px;
 }
+
+#progressBar::chunk{
+	background: #fff;
+	margin: 0px;
+}
+
+#progressBar{
+	border: 1px solid #fff;
+	background: rgba(255,255,255,.3);
+	border-radius: 0px;
+	padding: 2px;
+	text-align: center;
+	color: #000;
+	font-weight: bold;
+}
+
+#playBtn{
+	border-radius: 2px;
+	border-top: 2px solid #004c0f;
+	background: #002607;
+}
+
+
+#playBtn:hover{
+	border-top: 2px solid #006614;
+	background: #003f0b;
+}
+
+#btnW {
+	background: #261300;
+	border-top: 2px solid #4c2800;
+}
+
+#tabMenu QTabBar::tab{
+	border: 4px solid transparent;
+	width: 64px;
+	height: 24px;
+	padding: 5px;
+	background: rgba(0,0,0,.5)
+}
+
+#tabMenu QTabBar::tab:hover{
+	background: #14120f;
+}
+
+#tabMenu QTabBar::tab:selected{
+	border-top: 4px solid #4c2800;
+}
+
+#playTab, #setTab, #tabMenu QTabBar::tab:selected{
+	background: #14120f;
+}
+
+#tabMenu::pane{maring: 0px}
+
+#tabMenu::tab-bar{
+	left: 15px;
+	padding: 0;
+}

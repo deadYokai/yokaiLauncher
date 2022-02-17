@@ -2,11 +2,22 @@
 <ui version="4.0">
  <class>ClientForm</class>
  <widget class="QWidget" name="ClientForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>949</width>
+    <height>737</height>
+   </rect>
+  </property>
   <property name="sizePolicy">
    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
     <horstretch>1</horstretch>
     <verstretch>1</verstretch>
    </sizepolicy>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
@@ -79,11 +90,27 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QLabel" name="cNick">
+           <property name="styleSheet">
+            <string notr="true">font-size: 18px</string>
+           </property>
+           <property name="text">
+            <string>deadYokai</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>
       <item>
        <widget class="QTabWidget" name="tabMenu">
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
         <property name="tabPosition">
          <enum>QTabWidget::North</enum>
         </property>
@@ -96,11 +123,26 @@
         <property name="usesScrollButtons">
          <bool>false</bool>
         </property>
-        <widget class="QWidget" name="tab">
+        <widget class="QWidget" name="playTab">
          <attribute name="title">
           <string>Play</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_3">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
           <item>
            <widget class="QLabel" name="mcDec">
             <property name="maximumSize">
@@ -124,16 +166,22 @@
            </widget>
           </item>
           <item>
-           <widget class="QWidget" name="widget_4" native="true">
+           <widget class="QWidget" name="btnW" native="true">
             <property name="maximumSize">
              <size>
               <width>16777215</width>
               <height>64</height>
              </size>
             </property>
+            <property name="styleSheet">
+             <string notr="true"/>
+            </property>
             <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item alignment="Qt::AlignLeft|Qt::AlignVCenter">
-              <widget class="QPushButton" name="pushButton">
+              <widget class="QPushButton" name="playBtn">
+               <property name="styleSheet">
+                <string notr="true"/>
+               </property>
                <property name="text">
                 <string>Play</string>
                </property>
@@ -144,7 +192,7 @@
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="tab_2">
+        <widget class="QWidget" name="setTab">
          <property name="layoutDirection">
           <enum>Qt::LeftToRight</enum>
          </property>
@@ -268,11 +316,38 @@
    </item>
    <item row="1" column="0">
     <widget class="QProgressBar" name="progressBar">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16777215</height>
+      </size>
+     </property>
      <property name="autoFillBackground">
       <bool>false</bool>
      </property>
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
+     <property name="minimum">
+      <number>0</number>
+     </property>
+     <property name="maximum">
+      <number>1000</number>
+     </property>
      <property name="value">
-      <number>24</number>
+      <number>500</number>
+     </property>
+     <property name="invertedAppearance">
+      <bool>false</bool>
+     </property>
+     <property name="textDirection">
+      <enum>QProgressBar::TopToBottom</enum>
+     </property>
+     <property name="format">
+      <string>%v file/%m</string>
      </property>
     </widget>
    </item>

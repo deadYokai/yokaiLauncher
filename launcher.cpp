@@ -48,6 +48,8 @@ MWin::MWin(QWidget *parent) : QWidget(parent)
 	mm = findChild<QMainWindow*>("MainWindow");
 	mwCW = findChild<QWidget*>("centralwidget");
 	client_f = loadUiFile("client", this);
+	cNick = client_f->findChild<QLabel*>("cNick");
+	nicknameBox = findChild<QLineEdit*>("nicknameBox");
 	ui_mw->show();
 	client_f->hide();
 	QMetaObject::connectSlotsByName( this );
@@ -57,6 +59,10 @@ MWin::MWin(QWidget *parent) : QWidget(parent)
 void MWin::on_enterBtn_clicked(){
 	MWin::client_f->show();
 	MWin::mm->setCentralWidget(MWin::client_f);
+	MWin::cNick->setText(MWin::nicknameBox->text());
+}
+
+void MWin::on_playBtn_clicked(){
 }
 
 int main(int argc, char *argv[])
