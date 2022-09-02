@@ -1,18 +1,16 @@
 # yokaiLauncher
 ## Launcher for Minecraft
-Launcher is developing in C/C++ using Qt5;
-> *Only Linux yet...*
+Launcher is developing on C/C++ using Qt5;
 
 ### Compilation:
 ```bash
-qmake
+mkdir build && cd build
+qmake ..
 make
 ```
-and run:
-`./yokaiLauncher`
 
-# Support me:
+Linux: `build/yokaiLauncher`
+Win: `build/release/yokaiLauncher.exe`
 
-[<img alt="Patreon" width="190px" src="https://api.vilafox.xyz/patreon.png" />](https://www.patreon.com/MyNameIsKitsune)
-[<img alt="Ko-Fi" width="190px" src="https://uploads-ssl.webflow.com/5c14e387dab576fe667689cf/61e11e22d8ff4a5b4a1b3346_Supportbutton-1.png" />](https://ko-fi.com/mynameiskitsune)
-[<img alt="Paypal" width="190px" src="https://www.paypalobjects.com/webstatic/mktg/logo/bdg_now_accepting_pp_2line_w.png" />](https://www.paypal.com/donate/?hosted_button_id=REEBKE8J7FAUC)
+# Help Ukraine:
+[United24](https://u24.gov.ua/), [Come Back Alive](https://savelife.in.ua/en/), [Hospitallers](https://www.hospitallers.life/needs-hospitallers), [Charity foundation of Serhiy Prytula](https://prytulafoundation.org/en), [Humanitarian aid](https://help.gov.ua/en/)
