@@ -4,7 +4,7 @@ Launcher is developing on C/C++ using Qt5;
 
 ### Build:
 
-Depency: qtbase, qttools, qtsvg
+Depency: qtbase, qttools, qtsvg, qtnetwork
 
 ```bash
 mkdir build && cd build
