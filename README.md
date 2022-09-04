@@ -2,7 +2,10 @@
 ## Launcher for Minecraft
 Launcher is developing on C/C++ using Qt5;
 
-### Compilation:
+### Build:
+
+Depency: qtbase, qttools, qtsvg
+
 ```bash
 mkdir build && cd build
 qmake ..
@@ -10,6 +13,7 @@ make
 ```
 
 Linux: `build/yokaiLauncher`
+
 Win: `build/release/yokaiLauncher.exe`
 
 # Help Ukraine:
