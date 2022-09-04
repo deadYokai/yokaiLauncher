@@ -18,6 +18,25 @@
 #include <QtConcurrent/QtConcurrentRun>
 #include <QStringList> 
 #include <iostream>
+#include <QtNetwork>
+#include <QNetworkAccessManager>
+#include <QUrl>
+#include <QTextStream> 
+#include <QJsonObject> 
+#include <QCryptographicHash> 
+
+QT_BEGIN_NAMESPACE
+class QFile;
+class QNetworkReply;
+QT_END_NAMESPACE
+
+using namespace std;
+
+enum class PState {
+    INIT,
+    MANDOWN,
+    MANCHEKSUM
+};
 
 class MWin : public QMainWindow
 {
@@ -25,11 +44,27 @@ class MWin : public QMainWindow
 
 public:
     explicit MWin(QWidget *parent = nullptr);
+    ~MWin();
     void appshow();
     void disableControls(bool);
     void changeProgressState(int, QString, bool, bool);
+    void changeProgressState(int, int, QString, bool, bool);
     void changeProgressState(bool);
     QComboBox *vList;
+    void purl();
+    void httpReq(const QUrl &requestedUrl);
+    void downloadFile(const QUrl &requestedUrl, QString path);
+    void progress_func(qint64 bytesRead, qint64 totalBytes);
+    void st();
+    void httpFinish();
+    void httpRead();
+    void manlistimport();
+    void progressFinish();
+    std::unique_ptr<QFile> openFileForWrite(const QString &fileName);
+    QString getfilepath(QString path);
+    PState progstate;
+    QString mansha;
+    void getCheckSum();    
 
 private slots:
     void on_playBtn_clicked();
@@ -45,4 +80,9 @@ private:
     QLabel *pLabel;
     QWidget *pWidget;
     QProgressBar *progressBar;
+    QNetworkAccessManager qnam;
+    QNetworkReply *reply;
+    QUrl url;
+    std::unique_ptr<QFile> file;
+
 };

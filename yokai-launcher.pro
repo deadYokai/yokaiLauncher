@@ -16,18 +16,21 @@ INCLUDEPATH += .
 QT += uitools
 QT += widgets
 QT += svg
+QT += network
 
 HEADERS = launcher.h
 FORMS += assets/client.ui
 SOURCES += launcher.cpp
 RESOURCES += res.qrc
 
-LIBS += -lcurl
-INCLUDEPATH += include/
+#LIBS += -lcurl -lssl -lcrypto
+#INCLUDEPATH += include/
+
+# QMAKE_CXXFLAGS += -rdynamic
 
 win32:CONFIG += win
 win64:CONFIG += win
-win:LIBS += -lidn2 -lunistring -liconv -lcharset -lssh2 -lgcrypt -lgpg-error -ladvapi32 -lcrypt32 -lwldap32 -lzstd -lz -lws2_32 -lpthread
+win:LIBS += -lidn2 -lunistring -liconv -lcharset -lssh2 -lgcrypt -lgpg-error -ladvapi32 -lcrypt32 -lwldap32 -lzstd -lz -lws2_32 -lpthread 
 win:RC_ICONS += assets/0.ico
 win:QT += winextras
 QMAKE_TARGET_COMPANY = "Vilafox (MyNameIsKitsune)"

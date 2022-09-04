@@ -1,25 +1,17 @@
 #include <launcher.h>
-#include <nlohmann/json.hpp>
-#include <thread>
-#include <future>
+#include <fstream>
 
 #if _WIN32 || _WIN64
+#define CURL_STATICLIB
 #include <QWinTaskbarButton>
 #endif
 
-#define CURL_STATICLIB
-#include <curl/curl.h>
-
-using json = nlohmann::json;
 using namespace std;
-
-json versionData;
-string latestVersion;
-
 
 void dp(string a){cout << a << endl;}
 void dp(char a){cout << a << endl;}
 void dp(int a){cout << a << endl;}
+void dp(double a){cout << a << endl;}
 
 static QWidget *loadUiFile(QString page, QWidget *parent = nullptr)
 {
@@ -67,6 +59,8 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 
 }
 
+MWin::~MWin(){}
+
 void MWin::disableControls(bool a = true){
 	bool val = !a;
 	nickname->setEnabled(val);
@@ -83,67 +77,182 @@ void MWin::changeProgressState(int progress, QString text, bool showBar = true, 
 	pLabel->setText(text);
 }
 
+void MWin::changeProgressState(int progress, int max, QString text, bool showBar = true, bool show = true){
+	int mH = show ? 40 : 0;
+	pWidget->setMaximumHeight(mH);
+	int pHeight = showBar ? 8 : 0;
+	progressBar->setMaximumHeight(pHeight);
+	progressBar->setMaximum(max);
+	progressBar->setValue(progress);
+	pLabel->setText(text);
+}
+
 void MWin::changeProgressState(bool show){
 	int mH = show ? 40 : 0;
 	pWidget->setMaximumHeight(mH);
 }
 
-static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-	((std::string*)userp)->append((char*)contents, size * nmemb);
-	return size * nmemb;
+QString MWin::getfilepath(QString path){
+	QString ddir = QDir::cleanPath(".");
+	bool useDirectory = !ddir.isEmpty() && QFileInfo(ddir).isDir();
+	if(useDirectory)
+		path.prepend(ddir + '/');
+	return path;
 }
 
-json purl(){
-	CURL *curl;
-	CURLcode res;
-	string readBuffer;
+void MWin::httpRead(){
+	if(file)
+		file->write(reply->readAll());
+}
 
-	curl = curl_easy_init();
-	curl_easy_setopt(curl, CURLOPT_URL, "https://vilafox.xyz/api/yokaiLauncher?get=release");
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-	res = curl_easy_perform(curl);
-	curl_easy_cleanup(curl);
+void MWin::getCheckSum(){
+	mansha = reply->readAll();
+	if(progstate == PState::MANCHEKSUM)
+		manlistimport();
+}
 
-	return json::parse(readBuffer);
+void MWin::httpFinish(){
+	QFileInfo fi;
+	if(progstate != PState::MANCHEKSUM){
+		if (file) {
+			fi.setFile(file->fileName());
+			file->close();
+			file.reset();
+		}
+		if (reply->error()) {
+			QFile::remove(fi.absoluteFilePath());
+			qDebug() << QString("Download failed:\n%1.").arg(reply->errorString());
+			
+			reply->deleteLater();
+			reply = nullptr;
+			return;
+		}
+
+	}
+	const QVariant redirectionTarget = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
+
+	reply->deleteLater();
+	reply = nullptr;
+
+	if (!redirectionTarget.isNull()) {
+        const QUrl redirectedUrl = url.resolved(redirectionTarget.toUrl());
+		if(progstate != PState::MANCHEKSUM){
+			file = openFileForWrite(fi.absoluteFilePath());
+			if (!file) {
+				return;
+			}
+		}
+        httpReq(redirectedUrl);
+        return;
+    }
+
+}
+
+std::unique_ptr<QFile> MWin::openFileForWrite(const QString &fileName){
+	std::unique_ptr<QFile> file(new QFile(fileName));
+	if (!file->open(QIODevice::WriteOnly)) {
+        qDebug() << QString("Unable to save the file %1: %2.").arg(QDir::toNativeSeparators(fileName), file->errorString());
+        return nullptr;
+    }
+    return file;
+
+}
+
+void MWin::progress_func(qint64 bytesRead, qint64 totalBytes)
+{
+	changeProgressState((int)bytesRead, (int)totalBytes, QString::fromStdString((int)bytesRead+"/"+(int)totalBytes));
+}
+
+
+void MWin::manlistimport(){
+	progstate = PState::INIT;
+	QFile f(getfilepath("yokaiLauncher_manifest.json"));
+	if (!f.open(QFile::ReadOnly | QFile::Text)) return;
+	QTextStream in(&f);
+	QString str = in.readAll();
+	QCryptographicHash hash(QCryptographicHash::Sha256);
+	QByteArray header = str.toUtf8();
+	hash.addData(header.data());
+	QString a = hash.result().toHex();
+	qDebug() << "Checksum: " << mansha;
+	if(a != mansha){
+		progstate = PState::MANCHEKSUM;
+		progressFinish();
+		return;
+	}
+	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
+	QJsonObject jsonObject = jsonResponse.object();
+	QString latestVersion = jsonObject["latest"].toObject()["release"].toString();
+	QJsonArray vData = jsonObject["versions"].toArray();
+	qDebug() << "Latest version: " << latestVersion;
+	for (QJsonArray::iterator it = vData.begin(); it != vData.end(); ++it) {
+		QJsonValue a = *it;
+		QJsonObject jo = a.toObject();
+		if(jo["type"].toString() == "release"){
+			vList->addItem(jo["id"].toString());
+		}
+	}
+	vList->setCurrentIndex(0);
+	changeProgressState(false);
+	disableControls(false);
+}
+
+void MWin::progressFinish(){
+	switch(progstate){
+		case PState::MANDOWN:
+			manlistimport();
+			break;
+		case PState::MANCHEKSUM:
+			changeProgressState(0, "Checking manifest checksum...", false);
+			qDebug() << "Checking manifest checksum...";
+			httpReq(QUrl("https://vilafox.xyz/api/yokaiLauncher?get=sha"));
+			break;
+		default:
+			changeProgressState(0, "Done.", false);
+			disableControls(false);
+	}
+}
+
+void MWin::httpReq(const QUrl &requestedUrl) {
+	reply = qnam.get(QNetworkRequest(requestedUrl));
+	connect(reply, &QNetworkReply::finished, this, &MWin::httpFinish);
+	if(progstate != PState::MANCHEKSUM){
+		connect(reply, &QIODevice::readyRead, this, &MWin::httpRead);
+		connect(reply, &QNetworkReply::downloadProgress, this, &MWin::progress_func);
+		connect(reply, &QNetworkReply::finished, this, &MWin::progressFinish);
+	}else{
+		connect(reply, &QIODevice::readyRead, this, &MWin::getCheckSum);
+	}
+}
+
+void MWin::downloadFile(const QUrl &requestedUrl, QString path){
+	
+	path = getfilepath(path);
+
+	if(QFile::exists(path))
+		QFile::remove(path);
+
+	file = openFileForWrite(path);
+	if(!file)
+		return;
+	httpReq(requestedUrl);
+}
+
+void MWin::purl(){
+	changeProgressState(0, "Getting version manifest...", false);
+	QString manpath = "yokaiLauncher_manifest.json";
+	dp("Getting version manifest...");
+	progstate = PState::MANDOWN;
+	if(!QFile::exists(getfilepath(manpath)))
+		downloadFile(QUrl("https://vilafox.xyz/api/yokaiLauncher_manifest.json"), manpath);
+	else
+		progressFinish();
+
 }
 
 void MWin::on_playBtn_clicked(){
 	changeProgressState(100, "Play button clicked");
 	dp("Play button clicked");
-}
-
-// void aFunction(QPromise<int> &promise)
-// {
-//     promise.setProgressRange(0, 100);
-//     int result = 0;
-//     for (int i = 0; i < 100; ++i) {
-//         // computes some part of the task
-//         const int part = ... ;
-//         result += part;
-//         promise.setProgressValue(i);
-//     }
-//     promise.addResult(result);
-// }
-// QFutureWatcher<int> watcher;
-// QObject::connect(&watcher, &QFutureWatcher::progressValueChanged, [](int progress){
-//     ... ; // update GUI with a progress
-//     qDebug() << "current progress:" << progress;
-// });
-// watcher.setFuture(QtConcurrent::run(aFunction));
-void st(MWin* n){
-	dp("Getting version manifest...");
-	future<json> manRes = async(purl);
-	versionData = manRes.get();
-	latestVersion = versionData["latest"];
-	dp("Latest version: " + latestVersion);
-	for (json::iterator it = versionData["versionlist"].begin(); it != versionData["versionlist"].end(); ++it) {
-		n->vList->addItem(QString::fromStdString(*it));
-	}
-	n->vList->setCurrentIndex(0);
-	n->changeProgressState(false);
-	n->disableControls(false);
 }
 
 void MWin::appshow(){
@@ -156,8 +265,8 @@ void MWin::appshow(){
     button->setOverlayIcon(QIcon(":/assets/icon.svg"));
 #endif
 	disableControls();
-	changeProgressState(0, "Getting version manifest...", false);
-	auto future = QtConcurrent::run(st, this);
+	// auto future = QtConcurrent::run(mem_fn(&MWin::st), this);
+	purl();
 	
 }
 
@@ -170,6 +279,7 @@ int main(int argc, char *argv[])
 	app.setWindowIcon(QIcon(":/assets/icon.svg"));
 	// importFonts();
 	MWin n;
+	n.progstate = PState::INIT;
 	n.appshow();
 	return app.exec();
 }
