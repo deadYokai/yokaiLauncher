@@ -279,7 +279,7 @@
                 <number>-1</number>
                </property>
                <property name="placeholderText">
-                <string>1.19.1</string>
+                <string>Loading...</string>
                </property>
               </widget>
              </item>

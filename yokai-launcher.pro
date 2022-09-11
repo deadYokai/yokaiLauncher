@@ -30,7 +30,7 @@ RESOURCES += res.qrc
 
 win32:CONFIG += win
 win64:CONFIG += win
-win:LIBS += -lidn2 -lunistring -liconv -lcharset -lssh2 -lgcrypt -lgpg-error -ladvapi32 -lcrypt32 -lwldap32 -lzstd -lz -lws2_32 -lpthread 
+win:LIBS += -liconv -lcharset -ladvapi32 -lcrypt32 -lwldap32 -lzstd -lz -lws2_32 -lpthread
 win:RC_ICONS += assets/0.ico
 win:QT += winextras
 QMAKE_TARGET_COMPANY = "Vilafox (MyNameIsKitsune)"

@@ -35,7 +35,10 @@ using namespace std;
 enum class PState {
     INIT,
     MANDOWN,
-    MANCHEKSUM
+    MANCHEKSUM,
+    VERMANDOWN,
+    ASSDOWN,
+    LIBDOWN
 };
 
 class MWin : public QMainWindow
@@ -65,6 +68,20 @@ public:
     PState progstate;
     QString mansha;
     void getCheckSum();    
+    QMap<QString, QString> vData;
+    QString mcPath = QDir::homePath() + "/.yokaiMC";
+    QString verPath = "/versions/";
+    QString libsPath = "/libraries/";
+    QString assPath = "/assets/";
+    void vermandown();
+    void libdown();
+    void assdown();
+    QString currFile = nullptr;
+    QString currManFile = nullptr;
+    QJsonObject currmanj;
+    QJsonObject assmanj;
+    int ass = 0;
+    qsizetype assm = 0;
 
 private slots:
     void on_playBtn_clicked();

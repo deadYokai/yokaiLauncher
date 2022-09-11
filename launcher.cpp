@@ -1,8 +1,7 @@
 #include <launcher.h>
 #include <fstream>
 
-#if _WIN32 || _WIN64
-#define CURL_STATICLIB
+#ifdef Q_OS_WIN
 #include <QWinTaskbarButton>
 #endif
 
@@ -93,7 +92,7 @@ void MWin::changeProgressState(bool show){
 }
 
 QString MWin::getfilepath(QString path){
-	QString ddir = QDir::cleanPath(".");
+	QString ddir = QDir::cleanPath(mcPath);
 	bool useDirectory = !ddir.isEmpty() && QFileInfo(ddir).isDir();
 	if(useDirectory)
 		path.prepend(ddir + '/');
@@ -160,7 +159,16 @@ std::unique_ptr<QFile> MWin::openFileForWrite(const QString &fileName){
 
 void MWin::progress_func(qint64 bytesRead, qint64 totalBytes)
 {
-	changeProgressState((int)bytesRead, (int)totalBytes, QString::fromStdString((int)bytesRead+"/"+(int)totalBytes));
+	if(assm != 0){
+		changeProgressState((int)ass, static_cast<int>(assm), "Downloading assets " + QString::number(ass) + "/" + QString::number(static_cast<int>(assm)));
+	}else{
+		if(currFile != nullptr){
+			QFileInfo fi(currFile);
+			changeProgressState((int)bytesRead, (int)totalBytes, fi.fileName());
+		}
+		else
+			changeProgressState((int)bytesRead, (int)totalBytes, QString::fromStdString((int)bytesRead+"/"+(int)totalBytes));
+	}
 }
 
 
@@ -183,12 +191,14 @@ void MWin::manlistimport(){
 	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
 	QJsonObject jsonObject = jsonResponse.object();
 	QString latestVersion = jsonObject["latest"].toObject()["release"].toString();
-	QJsonArray vData = jsonObject["versions"].toArray();
+	
+	QJsonArray vDataArr = jsonObject["versions"].toArray();
 	qDebug() << "Latest version: " << latestVersion;
-	for (QJsonArray::iterator it = vData.begin(); it != vData.end(); ++it) {
-		QJsonValue a = *it;
-		QJsonObject jo = a.toObject();
+	for (QJsonArray::iterator it = vDataArr.begin(); it != vDataArr.end(); ++it) {
+		QJsonValue b = *it;
+		QJsonObject jo = b.toObject();
 		if(jo["type"].toString() == "release"){
+			vData.insert(jo["id"].toString(), jo["url"].toString());
 			vList->addItem(jo["id"].toString());
 		}
 	}
@@ -197,7 +207,97 @@ void MWin::manlistimport(){
 	disableControls(false);
 }
 
+void MWin::assdown(){
+	QJsonObject ja = assmanj["objects"].toObject();
+	assm = ja.size();
+	for(QJsonObject::iterator it = ja.begin(); it != ja.end(); ++it){
+		QJsonValue a = *it;
+		QJsonObject jo = a.toObject();
+		QString hash = jo["hash"].toString();
+		QString chash = QString(hash.data()[0]) + QString(hash.data()[1]);
+		QString apath = assPath + "objects/" + chash + "/" + hash;
+		QUrl aurl = QUrl("http://resources.download.minecraft.net/" + chash + "/" + hash);
+		++ass;
+		if(!QFile::exists(getfilepath(apath))){
+			downloadFile(aurl, apath);
+			return;
+		}
+	}
+	dp("Ready to play");
+	changeProgressState(0, "Done.", false);
+	disableControls(true);
+	progstate = PState::INIT;
+}
+
+void MWin::libdown(){
+
+	QJsonArray ja = currmanj["libraries"].toArray();
+	for(QJsonArray::iterator it = ja.begin(); it != ja.end(); ++it){
+		QJsonValue a = *it;
+		QJsonObject jo = a.toObject();
+		QString libPath = libsPath + jo["downloads"].toObject()["artifact"].toObject()["path"].toString();
+		QUrl libUrl = QUrl(jo["downloads"].toObject()["artifact"].toObject()["url"].toString());
+		currFile = libPath;
+		
+		if(!QFile::exists(getfilepath(libPath))){
+			if(jo.contains("rules")){
+#ifdef Q_OS_WIN
+				if(jo["rules"].toArray()[0].toObject()["os"].toObject()["name"].toString() == "windows")
+#elif defined(Q_OS_LINUX)
+				if(jo["rules"].toArray()[0].toObject()["os"].toObject()["name"].toString() == "linux")
+#else	
+				if(jo["rules"].toArray()[0].toObject()["os"].toObject()["name"].toString() == "osx")
+#endif
+				{
+					downloadFile(libUrl, libPath);
+					return;
+				}
+			}else{
+				downloadFile(libUrl, libPath);
+				return;
+			}
+		}
+	}
+	changeProgressState(0, "Done.", false);
+	progstate = PState::ASSDOWN;
+	assdown();
+}
+
+void MWin::vermandown(){
+
+	QFile f(getfilepath(currManFile));
+	if (!f.open(QFile::ReadOnly | QFile::Text)) return;
+	QTextStream in(&f);
+	QString str = in.readAll();
+	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
+	currmanj = jsonResponse.object();
+	QString dpath = verPath + vList->currentText() + "/" + vList->currentText() + ".jar";
+	currFile = dpath;
+	QString id = currmanj["assetIndex"].toObject()["id"].toString();
+	QUrl uri = QUrl(currmanj["assetIndex"].toObject()["url"].toString());
+	QString assPathFile = assPath + "/indexes/" + id + ".json";
+	if(!QFile::exists(getfilepath(dpath)))
+		downloadFile(QUrl(currmanj["downloads"].toObject()["client"].toObject()["url"].toString()), dpath);
+	else{
+		if(!QFile::exists(getfilepath(assPathFile)))
+			downloadFile(uri, assPathFile);
+		else{
+			qDebug() << assPathFile;
+			QFile f(getfilepath(assPathFile));
+			if (!f.open(QFile::ReadOnly | QFile::Text)) return;
+			QTextStream in(&f);
+			QString str = in.readAll();
+			QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
+			assmanj = jsonResponse.object();
+			progstate = PState::LIBDOWN;
+			libdown();
+		}
+	}
+
+}
+
 void MWin::progressFinish(){
+	currFile = nullptr;
 	switch(progstate){
 		case PState::MANDOWN:
 			manlistimport();
@@ -206,6 +306,15 @@ void MWin::progressFinish(){
 			changeProgressState(0, "Checking manifest checksum...", false);
 			qDebug() << "Checking manifest checksum...";
 			httpReq(QUrl("https://vilafox.xyz/api/yokaiLauncher?get=sha"));
+			break;
+		case PState::VERMANDOWN:
+			vermandown();
+			break;
+		case PState::LIBDOWN:
+			libdown();
+			break;
+		case PState::ASSDOWN:
+			assdown();
 			break;
 		default:
 			changeProgressState(0, "Done.", false);
@@ -228,9 +337,14 @@ void MWin::httpReq(const QUrl &requestedUrl) {
 void MWin::downloadFile(const QUrl &requestedUrl, QString path){
 	
 	path = getfilepath(path);
+	QDir d;
+	QFileInfo fi(path);
 
 	if(QFile::exists(path))
 		QFile::remove(path);
+
+	if(!d.mkpath(fi.dir().path()))
+		return;
 
 	file = openFileForWrite(path);
 	if(!file)
@@ -251,21 +365,32 @@ void MWin::purl(){
 }
 
 void MWin::on_playBtn_clicked(){
-	changeProgressState(100, "Play button clicked");
 	dp("Play button clicked");
+	disableControls();
+	QString dpath = verPath + vList->currentText();
+	QString manifestUri = vData.value(vList->currentText());
+	QDir d;
+	if(d.mkpath(getfilepath(dpath))){
+		progstate = PState::VERMANDOWN;
+		currManFile = dpath + "/" + vList->currentText() + ".json";
+		if(!QFile::exists(getfilepath(dpath + "/" + vList->currentText() + ".json")))
+			downloadFile(QUrl(manifestUri), dpath + "/" + vList->currentText() + ".json");
+		else
+			vermandown();
+	}
+	
 }
 
 void MWin::appshow(){
 	ui_mw->show();
 	dp("UI loaded");
-#if _WIN32 || _WIN64
+#ifdef Q_OS_WIN
 	dp("Win show taskbar icon");
 	QWinTaskbarButton *button = new QWinTaskbarButton(this);
     button->setWindow(windowHandle());
     button->setOverlayIcon(QIcon(":/assets/icon.svg"));
 #endif
 	disableControls();
-	// auto future = QtConcurrent::run(mem_fn(&MWin::st), this);
 	purl();
 	
 }
