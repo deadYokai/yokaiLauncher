@@ -4,5 +4,6 @@
     <file>assets/bg_1.png</file>
     <file>assets/icon.svg</file>
     <file>assets/style.qss</file>
+    <file>assets/defconf.yml</file>
 </qresource>
 </RCC>

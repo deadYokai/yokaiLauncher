@@ -24,9 +24,11 @@
 #include <QTextStream> 
 #include <QJsonObject> 
 #include <QCryptographicHash> 
+#include <config_manager.h>
 
 QT_BEGIN_NAMESPACE
 class QFile;
+class CMan;
 class QNetworkReply;
 QT_END_NAMESPACE
 
@@ -69,10 +71,7 @@ public:
     QString mansha;
     void getCheckSum();    
     QMap<QString, QString> vData;
-    QString mcPath = QDir::homePath() + "/.yokaiMC";
-    QString verPath = "/versions/";
-    QString libsPath = "/libraries/";
-    QString assPath = "/assets/";
+    void loadconf();
     void vermandown();
     void libdown();
     void assdown();
@@ -82,6 +81,7 @@ public:
     QJsonObject assmanj;
     int ass = 0;
     qsizetype assm = 0;
+    CMan config;
 
 private slots:
     void on_playBtn_clicked();

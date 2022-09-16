@@ -1,0 +1,9 @@
+yokaiLauncher:
+  mcdir: ".yokai"
+  height: 800
+  width: 1070
+  lastver: "1.19.2"
+  maximized: false
+  ram: 2048
+  jvmargs: ""
+  nickname: ""

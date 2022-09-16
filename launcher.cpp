@@ -58,7 +58,11 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 
 }
 
-MWin::~MWin(){}
+MWin::~MWin(){
+	config.setVal("height", mm->height());
+	config.setVal("width", mm->width());
+	config.setVal("maximized", mm->isMaximized());
+}
 
 void MWin::disableControls(bool a = true){
 	bool val = !a;
@@ -92,9 +96,9 @@ void MWin::changeProgressState(bool show){
 }
 
 QString MWin::getfilepath(QString path){
-	QString ddir = QDir::cleanPath(mcPath);
-	bool useDirectory = !ddir.isEmpty() && QFileInfo(ddir).isDir();
-	if(useDirectory)
+	QString ddir = QDir::cleanPath(Path.mcPath);
+	QDir d;
+	if(d.mkpath(ddir))
 		path.prepend(ddir + '/');
 	return path;
 }
@@ -182,12 +186,12 @@ void MWin::manlistimport(){
 	QByteArray header = str.toUtf8();
 	hash.addData(header.data());
 	QString a = hash.result().toHex();
-	qDebug() << "Checksum: " << mansha;
 	if(a != mansha){
 		progstate = PState::MANCHEKSUM;
 		progressFinish();
 		return;
 	}
+	qDebug() << "Checksum: " << mansha;
 	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
 	QJsonObject jsonObject = jsonResponse.object();
 	QString latestVersion = jsonObject["latest"].toObject()["release"].toString();
@@ -215,7 +219,7 @@ void MWin::assdown(){
 		QJsonObject jo = a.toObject();
 		QString hash = jo["hash"].toString();
 		QString chash = QString(hash.data()[0]) + QString(hash.data()[1]);
-		QString apath = assPath + "objects/" + chash + "/" + hash;
+		QString apath = Path.assPath + "objects/" + chash + "/" + hash;
 		QUrl aurl = QUrl("http://resources.download.minecraft.net/" + chash + "/" + hash);
 		++ass;
 		if(!QFile::exists(getfilepath(apath))){
@@ -225,7 +229,7 @@ void MWin::assdown(){
 	}
 	dp("Ready to play");
 	changeProgressState(0, "Done.", false);
-	disableControls(true);
+	disableControls(false);
 	progstate = PState::INIT;
 }
 
@@ -235,7 +239,7 @@ void MWin::libdown(){
 	for(QJsonArray::iterator it = ja.begin(); it != ja.end(); ++it){
 		QJsonValue a = *it;
 		QJsonObject jo = a.toObject();
-		QString libPath = libsPath + jo["downloads"].toObject()["artifact"].toObject()["path"].toString();
+		QString libPath = Path.libsPath + jo["downloads"].toObject()["artifact"].toObject()["path"].toString();
 		QUrl libUrl = QUrl(jo["downloads"].toObject()["artifact"].toObject()["url"].toString());
 		currFile = libPath;
 		
@@ -271,11 +275,11 @@ void MWin::vermandown(){
 	QString str = in.readAll();
 	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
 	currmanj = jsonResponse.object();
-	QString dpath = verPath + vList->currentText() + "/" + vList->currentText() + ".jar";
+	QString dpath = Path.verPath + vList->currentText() + "/" + vList->currentText() + ".jar";
 	currFile = dpath;
 	QString id = currmanj["assetIndex"].toObject()["id"].toString();
 	QUrl uri = QUrl(currmanj["assetIndex"].toObject()["url"].toString());
-	QString assPathFile = assPath + "/indexes/" + id + ".json";
+	QString assPathFile = Path.assPath + "/indexes/" + id + ".json";
 	if(!QFile::exists(getfilepath(dpath)))
 		downloadFile(QUrl(currmanj["downloads"].toObject()["client"].toObject()["url"].toString()), dpath);
 	else{
@@ -367,7 +371,7 @@ void MWin::purl(){
 void MWin::on_playBtn_clicked(){
 	dp("Play button clicked");
 	disableControls();
-	QString dpath = verPath + vList->currentText();
+	QString dpath = Path.verPath + vList->currentText();
 	QString manifestUri = vData.value(vList->currentText());
 	QDir d;
 	if(d.mkpath(getfilepath(dpath))){
@@ -382,7 +386,6 @@ void MWin::on_playBtn_clicked(){
 }
 
 void MWin::appshow(){
-	ui_mw->show();
 	dp("UI loaded");
 #ifdef Q_OS_WIN
 	dp("Win show taskbar icon");
@@ -395,6 +398,27 @@ void MWin::appshow(){
 	
 }
 
+void MWin::loadconf(){
+
+	QString cpath = getfilepath("yokai.yml");
+	QDir d;
+	qDebug() << cpath;
+	// if(!d.mkpath(fi.dir().path())){
+		// return;
+	// }
+	CMan config(cpath);
+	Path.mcPath = config.getVal("mcdir");
+	bool ism = QVariant(config.getVal("maximized")).toBool();
+	if(ism){
+		ui_mw->showMaximized();
+	}else{
+		ui_mw->show();
+		ui_mw->resize(config.getVal("width").toInt(), config.getVal("height").toInt());
+	}
+
+	appshow();
+}
+
 int main(int argc, char *argv[])
 {
 	dp("Init");
@@ -405,6 +429,6 @@ int main(int argc, char *argv[])
 	// importFonts();
 	MWin n;
 	n.progstate = PState::INIT;
-	n.appshow();
+	n.loadconf();
 	return app.exec();
 }
