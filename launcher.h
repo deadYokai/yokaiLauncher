@@ -80,7 +80,7 @@ public:
     QString currManFile = nullptr;
     QJsonObject currmanj;
     QJsonObject assmanj;
-    int ass = 0;
+    qsizetype ass = 0;
     qsizetype assm = 0;
     CMan *config;
     QStringList getJargs();

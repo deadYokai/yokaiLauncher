@@ -74,6 +74,38 @@ MWin::~MWin(){
 	dp("===============================\n");
 }
 
+
+void MWin::disableControls(bool a = true){
+	bool val = !a;
+	nickname->setEnabled(val);
+	vList->setEnabled(val);
+	playBtn->setEnabled(val);
+}
+
+void MWin::changeProgressState(int progress, QString text, bool showBar = true, bool show = true){
+	int mH = show ? 40 : 0;
+	pWidget->setMaximumHeight(mH);
+	int pHeight = showBar ? 8 : 0;
+	progressBar->setMaximumHeight(pHeight);
+	progressBar->setValue(progress);
+	pLabel->setText(text);
+}
+
+void MWin::changeProgressState(int progress, int max, QString text, bool showBar = true, bool show = true){
+	int mH = show ? 40 : 0;
+	pWidget->setMaximumHeight(mH);
+	int pHeight = showBar ? 8 : 0;
+	progressBar->setMaximumHeight(pHeight);
+	progressBar->setMaximum(max);
+	progressBar->setValue(progress);
+	pLabel->setText(text);
+}
+
+void MWin::changeProgressState(bool show){
+	int mH = show ? 40 : 0;
+	pWidget->setMaximumHeight(mH);
+}
+
 QStringList MWin::getJargs(){
 	QString args = config->getVal("jvmargs");
 	args.append("-Dminecraft.launcher.brand=yokai");
@@ -127,6 +159,8 @@ bool MWin::checkJava(){
 }
 
 void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
+	disableControls(false);
+	changeProgressState(0, "Game exit", false);
 	qDebug() << "Exit code: " << exitCode;
 	qDebug() << "Exit status: " << ExitStatus;
 	run = false;
@@ -153,38 +187,9 @@ void MWin::launch(){
 	run = true;
 	connect(process, SIGNAL(finished(int , QProcess::ExitStatus )), this, SLOT(mcend(int , QProcess::ExitStatus )));
 	ui_mw->setWindowState(Qt::WindowMinimized);
+	changeProgressState(0, "Launching...", false);
+	disableControls();
 	process->start(QDir::cleanPath(jvm), args);
-}
-
-void MWin::disableControls(bool a = true){
-	bool val = !a;
-	nickname->setEnabled(val);
-	vList->setEnabled(val);
-	playBtn->setEnabled(val);
-}
-
-void MWin::changeProgressState(int progress, QString text, bool showBar = true, bool show = true){
-	int mH = show ? 40 : 0;
-	pWidget->setMaximumHeight(mH);
-	int pHeight = showBar ? 8 : 0;
-	progressBar->setMaximumHeight(pHeight);
-	progressBar->setValue(progress);
-	pLabel->setText(text);
-}
-
-void MWin::changeProgressState(int progress, int max, QString text, bool showBar = true, bool show = true){
-	int mH = show ? 40 : 0;
-	pWidget->setMaximumHeight(mH);
-	int pHeight = showBar ? 8 : 0;
-	progressBar->setMaximumHeight(pHeight);
-	progressBar->setMaximum(max);
-	progressBar->setValue(progress);
-	pLabel->setText(text);
-}
-
-void MWin::changeProgressState(bool show){
-	int mH = show ? 40 : 0;
-	pWidget->setMaximumHeight(mH);
 }
 
 QString MWin::getfilepath(QString path){
@@ -256,7 +261,7 @@ std::unique_ptr<QFile> MWin::openFileForWrite(const QString &fileName){
 void MWin::progress_func(qint64 bytesRead, qint64 totalBytes)
 {
 	if(assm != 0){
-		changeProgressState((int)ass, static_cast<int>(assm), "Downloading assets " + QString::number(ass) + "/" + QString::number(static_cast<int>(assm)));
+		changeProgressState(static_cast<int>(ass), static_cast<int>(assm), "Downloading assets " + QString::number(static_cast<int>(ass)) + "/" + QString::number(static_cast<int>(assm)));
 	}else{
 		if(currFile != nullptr){
 			QFileInfo fi(currFile);
@@ -313,7 +318,6 @@ void MWin::assdown(){
 		QString chash = QString(hash.data()[0]) + QString(hash.data()[1]);
 		QString apath = Path.assPath + "objects/" + chash + "/" + hash;
 		QUrl aurl = QUrl("http://resources.download.minecraft.net/" + chash + "/" + hash);
-		++ass;
 		if(!QFile::exists(getfilepath(apath))){
 			downloadFile(aurl, apath);
 			return;
@@ -322,7 +326,7 @@ void MWin::assdown(){
 	dp("Ready to play");
 	changeProgressState(0, "Done.", false);
 	disableControls(false);
-	progstate = PState::READY2PLAY;
+	progstate = PState::INIT;
 	launch();
 }
 
@@ -410,6 +414,7 @@ void MWin::progressFinish(){
 			libdown();
 			break;
 		case PState::ASSDOWN:
+			++ass;
 			assdown();
 			break;
 		case PState::READY2PLAY:
@@ -521,6 +526,7 @@ int main(int argc, char *argv[])
 	app.setWindowIcon(QIcon(":/assets/icon.svg"));
 	// importFonts();
 	MWin n;
+	app.setActiveWindow(&n);
 	n.progstate = PState::INIT;
 	n.loadconf();
 	return app.exec();
