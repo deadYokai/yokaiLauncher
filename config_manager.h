@@ -8,8 +8,8 @@ class CMan
 
     public:
         CMan();
-        CMan(QString pathtofile);
-
+        
+        void load(QString pathtofile);
         void saveConf();
 
         void setVal(QString key, QString val);

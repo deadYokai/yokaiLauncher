@@ -7,3 +7,5 @@ yokaiLauncher:
   ram: 2048
   jvmargs: ""
   nickname: ""
+  isFabric: false
+  

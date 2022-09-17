@@ -40,7 +40,8 @@ enum class PState {
     MANCHEKSUM,
     VERMANDOWN,
     ASSDOWN,
-    LIBDOWN
+    LIBDOWN,
+    READY2PLAY
 };
 
 class MWin : public QMainWindow
@@ -81,10 +82,15 @@ public:
     QJsonObject assmanj;
     int ass = 0;
     qsizetype assm = 0;
-    CMan config;
+    CMan *config;
+    QStringList getJargs();
+    void launch();
+    bool checkJava();
 
 private slots:
     void on_playBtn_clicked();
+    void verChanged(const QString &text);
+    void mcend(int exitCode, QProcess::ExitStatus ExitStatus);
 
 
 private:
@@ -101,5 +107,6 @@ private:
     QNetworkReply *reply;
     QUrl url;
     std::unique_ptr<QFile> file;
-
+    QProcess *process;
+    bool run = false;
 };

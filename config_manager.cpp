@@ -6,7 +6,8 @@
 #include <fstream>
 
 CMan::CMan(){}
-CMan::CMan(QString pathtofile){
+
+void CMan::load(QString pathtofile){
     path = pathtofile.toUtf8().constData();
 	if(!QFile::exists(pathtofile)){
         QFile cfile(":/assets/defconf.yml");
@@ -20,7 +21,6 @@ CMan::CMan(QString pathtofile){
         }
 	}else
         config = YAML::LoadFile(path);
-    setVal("mcdir", QDir::homePath() + "/.yokai");
 }
 
 QString CMan::getVal(QString valname){
@@ -29,12 +29,12 @@ QString CMan::getVal(QString valname){
 
 void CMan::saveConf(){
     std::cout << "Writing config..." << std::endl;
-    QString conf = "yokaiLauncher:\n\t";
+    QString conf = "yokaiLauncher:\n  ";
     YAML::Node a = config["yokaiLauncher"];
     for (YAML::const_iterator it=a.begin();it!=a.end();++it) {
         QString key = it->first.as<QString>();
         QString val = it->second.as<QString>();
-        conf.append(key + ": \"" + val + "\"\n\t");
+        conf.append(key + ": \"" + val + "\"\n  ");
     }
 
     QFile outf(QString::fromStdString(path));

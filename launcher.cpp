@@ -43,6 +43,10 @@ int importFonts(){
 	return 1;
 }
 
+void MWin::verChanged(const QString &text){
+	config->setVal("lastver", text);
+}
+
 MWin::MWin(QWidget *parent) : QMainWindow(parent)
 {
 	ui_mw = loadUiFile("client", this);
@@ -55,13 +59,101 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 	progressBar = findChild<QProgressBar*>("progressBar");
 	playBtn = findChild<QPushButton*>("playBtn");
 	QMetaObject::connectSlotsByName( this );
+	connect(vList, &QComboBox::currentTextChanged, this, &MWin::verChanged);
 
 }
 
 MWin::~MWin(){
-	config.setVal("height", mm->height());
-	config.setVal("width", mm->width());
-	config.setVal("maximized", mm->isMaximized());
+	if(run) process->kill();
+	if(mm->isMaximized()){
+		config->setVal("maximized", mm->isMaximized());
+	}else{
+		config->setVal("height", mm->height());
+		config->setVal("width", mm->width());
+	}
+	dp("===============================\n");
+}
+
+QStringList MWin::getJargs(){
+	QString args = config->getVal("jvmargs");
+	args.append("-Dminecraft.launcher.brand=yokai");
+	args.append(" -Dminecraft.launcher.version=alpha-0");
+	QString assetsver = currmanj["assets"].toString();
+	QString ver = currmanj["id"].toString();
+	bool isFabric = QVariant(config->getVal("isFabric")).toBool();
+	if(isFabric) args.append(" -DFabricMcEmu="+currmanj["mainClass"].toString());
+	QString mainclass = isFabric ? "net.fabricmc.loader.impl.launch.knot.KnotClient" : currmanj["mainClass"].toString();
+	QString libs = "-cp ";
+	QJsonArray ja = currmanj["libraries"].toArray();
+	for(QJsonArray::iterator it = ja.begin(); it != ja.end(); ++it){
+		QJsonValue a = *it;
+		QJsonObject jo = a.toObject();
+		QString libPath = getfilepath(Path.libsPath + jo["downloads"].toObject()["artifact"].toObject()["path"].toString());	
+		if(jo.contains("rules")){
+#ifdef Q_OS_WIN
+			if(jo["rules"].toArray()[0].toObject()["os"].toObject()["name"].toString() == "windows")
+#elif defined(Q_OS_LINUX)
+			if(jo["rules"].toArray()[0].toObject()["os"].toObject()["name"].toString() == "linux")
+#else	
+			if(jo["rules"].toArray()[0].toObject()["os"].toObject()["name"].toString() == "osx")
+#endif
+			{
+				libs.append(libPath + ":");
+			}
+		}else
+			libs.append(libPath + ":");
+	}
+	// TODO
+	// if(isFabric) libs.append(getfilepath(Path.libsPath + ".jar:"));
+	args.append(" " + libs + getfilepath(Path.verPath+ver+"/"+ver+".jar"));
+	args.append(" " + mainclass);
+
+	args.append(" --username " + nickname->text());
+	args.append(" --version " + ver);
+	args.append(" --gameDir " + Path.mcPath);
+	args.append(" --assetsDir " + getfilepath(Path.assPath));
+	args.append(" --assetIndex " + assetsver);
+	args.append(" --uuid " + QUuid::createUuidV3(QUuid(), nickname->text()).toString().replace("{", "").replace("}", ""));
+	args.append(" --accessToken null"); //TODO: mojang auth
+	args.append(" --userType legacy");
+	args.append(" --versionType " + currmanj["type"].toString());
+
+	return args.split(" ");
+}
+
+bool MWin::checkJava(){
+	// TODO
+	return true;
+}
+
+void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
+	qDebug() << "Exit code: " << exitCode;
+	qDebug() << "Exit status: " << ExitStatus;
+	run = false;
+	bool ism = QVariant(config->getVal("maximized")).toBool();
+	if(ism)
+		ui_mw->setWindowState(Qt::WindowMaximized);
+	else
+		ui_mw->setWindowState(ui_mw->windowState() & ~Qt::WindowMinimized);
+}
+
+void MWin::launch(){
+	if(!checkJava()){
+		throw("Java not found!");
+		return;
+	}
+	QString java_home = QString::fromLocal8Bit(qgetenv("JAVA_HOME"));
+	#ifdef Q_OS_WIN
+	QString jvm = java_home + "/bin/javaw";
+	#else
+	QString jvm = java_home + "/bin/java";
+	#endif
+	QStringList args = getJargs();
+	process = new QProcess(this);
+	run = true;
+	connect(process, SIGNAL(finished(int , QProcess::ExitStatus )), this, SLOT(mcend(int , QProcess::ExitStatus )));
+	ui_mw->setWindowState(Qt::WindowMinimized);
+	process->start(QDir::cleanPath(jvm), args);
 }
 
 void MWin::disableControls(bool a = true){
@@ -206,7 +298,7 @@ void MWin::manlistimport(){
 			vList->addItem(jo["id"].toString());
 		}
 	}
-	vList->setCurrentIndex(0);
+	vList->setCurrentText(config->getVal("lastver"));
 	changeProgressState(false);
 	disableControls(false);
 }
@@ -230,7 +322,8 @@ void MWin::assdown(){
 	dp("Ready to play");
 	changeProgressState(0, "Done.", false);
 	disableControls(false);
-	progstate = PState::INIT;
+	progstate = PState::READY2PLAY;
+	launch();
 }
 
 void MWin::libdown(){
@@ -286,7 +379,6 @@ void MWin::vermandown(){
 		if(!QFile::exists(getfilepath(assPathFile)))
 			downloadFile(uri, assPathFile);
 		else{
-			qDebug() << assPathFile;
 			QFile f(getfilepath(assPathFile));
 			if (!f.open(QFile::ReadOnly | QFile::Text)) return;
 			QTextStream in(&f);
@@ -319,6 +411,9 @@ void MWin::progressFinish(){
 			break;
 		case PState::ASSDOWN:
 			assdown();
+			break;
+		case PState::READY2PLAY:
+			launch();
 			break;
 		default:
 			changeProgressState(0, "Done.", false);
@@ -369,8 +464,8 @@ void MWin::purl(){
 }
 
 void MWin::on_playBtn_clicked(){
-	dp("Play button clicked");
 	disableControls();
+	config->setVal("nickname", nickname->text());
 	QString dpath = Path.verPath + vList->currentText();
 	QString manifestUri = vData.value(vList->currentText());
 	QDir d;
@@ -382,7 +477,6 @@ void MWin::on_playBtn_clicked(){
 		else
 			vermandown();
 	}
-	
 }
 
 void MWin::appshow(){
@@ -398,29 +492,28 @@ void MWin::appshow(){
 	
 }
 
-void MWin::loadconf(){
+void MWin::loadconf()
+{
 
 	QString cpath = getfilepath("yokai.yml");
 	QDir d;
-	qDebug() << cpath;
-	// if(!d.mkpath(fi.dir().path())){
-		// return;
-	// }
-	CMan config(cpath);
-	Path.mcPath = config.getVal("mcdir");
-	bool ism = QVariant(config.getVal("maximized")).toBool();
+	config = new CMan();
+	config->load(cpath);
+	Path.mcPath = config->getVal("mcdir");
+	bool ism = QVariant(config->getVal("maximized")).toBool();
 	if(ism){
 		ui_mw->showMaximized();
 	}else{
 		ui_mw->show();
-		ui_mw->resize(config.getVal("width").toInt(), config.getVal("height").toInt());
+		ui_mw->resize(config->getVal("width").toInt(), config->getVal("height").toInt());
 	}
-
+	nickname->setText(config->getVal("nickname"));
 	appshow();
 }
 
 int main(int argc, char *argv[])
 {
+	dp("\n======== yokaiLauncher ========");
 	dp("Init");
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 	QApplication app(argc, argv);
