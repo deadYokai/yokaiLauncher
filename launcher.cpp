@@ -34,17 +34,28 @@ QString importQss(){
 }
 
 int importFonts(){
-	QFile file(":/assets/inglobal.ttf");
-	QFile file2(":/assets/inglobalb.ttf");
-	file.open(QFile::ReadOnly);
-	file2.open(QFile::ReadOnly);
-	QFontDatabase::addApplicationFontFromData(file.readAll());
-	QFontDatabase::addApplicationFontFromData(file2.readAll());
+	QList<QString> flist;
+	flist.append(":/assets/e-Ukraine-Bold.otf");
+	flist.append(":/assets/e-Ukraine-Thin.otf");
+	flist.append(":/assets/e-Ukraine-Light.otf");
+	flist.append(":/assets/e-UkraineHead-LOGO.otf");
+	for(QList<QString>::iterator it = flist.begin(); it != flist.end(); ++it){
+		QFile file(*it);
+		file.open(QFile::ReadOnly);
+		QFontDatabase::addApplicationFontFromData(file.readAll());
+	}
 	return 1;
 }
 
 void MWin::verChanged(const QString &text){
 	config->setVal("lastver", text);
+}
+
+void MWin::isFabricbox(int state){
+	if(state == Qt::Checked)
+		config->setVal("isFabric", true);
+	else
+		config->setVal("isFabric", false);
 }
 
 MWin::MWin(QWidget *parent) : QMainWindow(parent)
@@ -58,19 +69,23 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 	pLabel = findChild<QLabel*>("pLabel");
 	progressBar = findChild<QProgressBar*>("progressBar");
 	playBtn = findChild<QPushButton*>("playBtn");
+	fabricb = findChild<QCheckBox*>("fabricb");
+	settingsb = findChild<QPushButton*>("settb");
+	bid = findChild<QLabel*>("bid");
+	bid->setText("Build #" + QString::number(BUILDID));
+	this->setWindowFlags(Qt::Window);
 	QMetaObject::connectSlotsByName( this );
 	connect(vList, &QComboBox::currentTextChanged, this, &MWin::verChanged);
-
+	connect(fabricb, &QCheckBox::stateChanged, this, &MWin::isFabricbox);
 }
 
 MWin::~MWin(){
 	if(run) process->kill();
-	if(mm->isMaximized()){
-		config->setVal("maximized", mm->isMaximized());
-	}else{
+	if(!mm->isMaximized()){
 		config->setVal("height", mm->height());
 		config->setVal("width", mm->width());
 	}
+	config->setVal("maximized", mm->isMaximized());
 	dp("===============================\n");
 }
 
@@ -80,6 +95,8 @@ void MWin::disableControls(bool a = true){
 	nickname->setEnabled(val);
 	vList->setEnabled(val);
 	playBtn->setEnabled(val);
+	fabricb->setEnabled(val);
+	settingsb->setEnabled(val);
 }
 
 void MWin::changeProgressState(int progress, QString text, bool showBar = true, bool show = true){
@@ -114,13 +131,26 @@ QStringList MWin::getJargs(){
 	QString ver = currmanj["id"].toString();
 	bool isFabric = QVariant(config->getVal("isFabric")).toBool();
 	if(isFabric) args.append(" -DFabricMcEmu="+currmanj["mainClass"].toString());
-	QString mainclass = isFabric ? "net.fabricmc.loader.impl.launch.knot.KnotClient" : currmanj["mainClass"].toString();
+	QString mainclass = isFabric ? fabMclass : currmanj["mainClass"].toString();
 	QString libs = "-cp ";
 	QJsonArray ja = currmanj["libraries"].toArray();
 	for(QJsonArray::iterator it = ja.begin(); it != ja.end(); ++it){
 		QJsonValue a = *it;
 		QJsonObject jo = a.toObject();
-		QString libPath = getfilepath(Path.libsPath + jo["downloads"].toObject()["artifact"].toObject()["path"].toString());	
+		QString libPath = getfilepath(Path.libsPath + jo["downloads"].toObject()["artifact"].toObject()["path"].toString());
+		if(jo["downloads"].toObject().contains("classifiers")){
+#ifdef Q_OS_WIN
+			QString p = "windows";
+#else
+			QString p = "linux";
+#endif
+			if(jo["downloads"].toObject()["classifiers"].toObject().contains("natives-"+p)){
+				libs.append(libPath + ":");
+				QString u = jo["downloads"].toObject()["classifiers"].toObject()["natives-"+p].toObject()["url"].toString();
+				QString pp = Path.libsPath + jo["downloads"].toObject()["classifiers"].toObject()["natives-"+p].toObject()["path"].toString();
+				libs.append(getfilepath(pp) + ":");
+			}
+		}
 		if(jo.contains("rules")){
 #ifdef Q_OS_WIN
 			if(jo["rules"].toArray()[0].toObject()["os"].toObject()["name"].toString() == "windows")
@@ -135,8 +165,8 @@ QStringList MWin::getJargs(){
 		}else
 			libs.append(libPath + ":");
 	}
-	// TODO
-	// if(isFabric) libs.append(getfilepath(Path.libsPath + ".jar:"));
+	
+	if(isFabric) libs.append(fabLibs);
 	args.append(" " + libs + getfilepath(Path.verPath+ver+"/"+ver+".jar"));
 	args.append(" " + mainclass);
 
@@ -153,9 +183,76 @@ QStringList MWin::getJargs(){
 	return args.split(" ");
 }
 
+void MWin::fabricDownload(){
+	QString fabricMaven = "https://maven.fabricmc.net/";
+	QString fabricMcMavenDir = "net/fabricmc/";
+	QString fabricMavenDir = fabricMcMavenDir + "fabric-loader/";
+	QString fp = "fabric/fabric-loader-"+fabVer;
+	QString path = fp +".json";
+	QString fab = fabricMaven+fabricMavenDir+fabVer+"/fabric-loader-"+fabVer;
+	progstate = PState::FabricDown;
+	if(!QFile::exists(getfilepath(path))){
+		QFileInfo fi(getfilepath(path));
+		QDir dir(fi.dir().path());
+		dir.setNameFilters(QStringList() << "fabric-loader-*.*");
+		dir.setFilter(QDir::Files);
+		foreach(QString dirFile, dir.entryList())
+		{
+			dir.remove(dirFile);
+		}
+		downloadFile(fab+".json", path);
+		return;
+	}
+
+	if(!QFile::exists(getfilepath(fp+".jar"))){
+		currFile = getfilepath(fp+".jar");
+		downloadFile(fab+".jar", fp+".jar");
+		return;
+	}
+
+	QFile f(getfilepath(path));
+	if (!f.open(QFile::ReadOnly | QFile::Text)) return;
+	QTextStream in(&f);
+	QString str = in.readAll();
+	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
+	QJsonArray ja = jsonResponse.object()["libraries"].toObject()["common"].toArray();
+	fabMclass = jsonResponse.object()["mainClass"].toObject()["client"].toString();
+	for(QJsonArray::iterator it = ja.begin(); it != ja.end(); ++it){
+		QJsonValue a = *it;
+		QJsonObject jo = a.toObject();
+		QStringList libMaven = jo["name"].toString().split(":");
+		QString apath = libMaven[0].replace(".", "/");
+		QString name = libMaven[1];
+		QString ver = libMaven[2];
+		QString qpath = apath + "/" + name + "/" + ver + "/" + name + "-" + ver + ".jar";
+		QString libPath = Path.libsPath + qpath;
+		fabLibs.append(getfilepath(libPath)+":");
+		QUrl libUrl = QUrl(fabricMaven + qpath);
+		currFile = libPath;
+		if(!QFile::exists(getfilepath(libPath))){
+			downloadFile(libUrl, libPath);
+			return;
+		}
+	}
+	
+
+	QString qpath = fabricMcMavenDir + "/intermediary/" + currmanj["id"].toString() + "/intermediary-" + currmanj["id"].toString() + "-v2.jar";
+	QString libPath = Path.libsPath + qpath;
+
+	if(!QFile::exists(getfilepath(libPath))){
+		currFile = getfilepath(libPath);
+		downloadFile(fabricMaven + qpath, libPath);
+		return;
+	}
+
+	dp("Fabric enabled");
+	fabLibs.append(getfilepath(libPath)+":");
+	fabLibs.append(getfilepath(fp + ".jar")+":");
+	launch();
+}
+
 bool MWin::checkJava(){
-	// TODO
-	return true;
+	return (QString::fromLocal8Bit(qgetenv("JAVA_HOME")) == "") ? false : true;
 }
 
 void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
@@ -173,7 +270,7 @@ void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
 
 void MWin::launch(){
 	if(!checkJava()){
-		throw("Java not found!");
+		qFatal("Err: Java not found!");
 		return;
 	}
 	QString java_home = QString::fromLocal8Bit(qgetenv("JAVA_HOME"));
@@ -190,6 +287,8 @@ void MWin::launch(){
 	changeProgressState(0, "Launching...", false);
 	disableControls();
 	process->start(QDir::cleanPath(jvm), args);
+	// process->execute(QDir::cleanPath(jvm), args);
+	
 }
 
 QString MWin::getfilepath(QString path){
@@ -214,6 +313,7 @@ void MWin::getCheckSum(){
 void MWin::httpFinish(){
 	QFileInfo fi;
 	if(progstate != PState::MANCHEKSUM){
+
 		if (file) {
 			fi.setFile(file->fileName());
 			file->close();
@@ -245,10 +345,11 @@ void MWin::httpFinish(){
         httpReq(redirectedUrl);
         return;
     }
-
+	progressFinish();
 }
 
 std::unique_ptr<QFile> MWin::openFileForWrite(const QString &fileName){
+
 	std::unique_ptr<QFile> file(new QFile(fileName));
 	if (!file->open(QIODevice::WriteOnly)) {
         qDebug() << QString("Unable to save the file %1: %2.").arg(QDir::toNativeSeparators(fileName), file->errorString());
@@ -283,16 +384,17 @@ void MWin::manlistimport(){
 	QByteArray header = str.toUtf8();
 	hash.addData(header.data());
 	QString a = hash.result().toHex();
+	qDebug() << "Checksum local: " << a;
+	qDebug() << "Checksum server: " << mansha;
 	if(a != mansha){
-		progstate = PState::MANCHEKSUM;
-		progressFinish();
+		f.remove();
+		purl();
 		return;
 	}
-	qDebug() << "Checksum: " << mansha;
 	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
 	QJsonObject jsonObject = jsonResponse.object();
 	QString latestVersion = jsonObject["latest"].toObject()["release"].toString();
-	
+	fabVer = jsonObject["fabric"].toString();
 	QJsonArray vDataArr = jsonObject["versions"].toArray();
 	qDebug() << "Latest version: " << latestVersion;
 	for (QJsonArray::iterator it = vDataArr.begin(); it != vDataArr.end(); ++it) {
@@ -308,10 +410,18 @@ void MWin::manlistimport(){
 	disableControls(false);
 }
 
+bool MWin::isWhiteSpace(const QString & str)
+{
+	return (QRegExp("\\s.").indexIn(str) != -1) ? true : false;
+}
+
+
 void MWin::assdown(){
 	QJsonObject ja = assmanj["objects"].toObject();
 	assm = ja.size();
+	ass = 0;
 	for(QJsonObject::iterator it = ja.begin(); it != ja.end(); ++it){
+		++ass;
 		QJsonValue a = *it;
 		QJsonObject jo = a.toObject();
 		QString hash = jo["hash"].toString();
@@ -323,11 +433,22 @@ void MWin::assdown(){
 			return;
 		}
 	}
+	ass = 0;
+	assm = 0;
 	dp("Ready to play");
-	changeProgressState(0, "Done.", false);
 	disableControls(false);
 	progstate = PState::INIT;
-	launch();
+	if(isWhiteSpace(nickname->text())){
+		dp("Warn: spaces in nickname");
+		changeProgressState(0, "Warn: spaces in nickname", false);
+		return;
+	}
+	bool isFabric = QVariant(config->getVal("isFabric")).toBool();
+	if(isFabric){
+		fabricDownload();
+		return;
+	}
+	else launch();
 }
 
 void MWin::libdown(){
@@ -340,6 +461,25 @@ void MWin::libdown(){
 		QUrl libUrl = QUrl(jo["downloads"].toObject()["artifact"].toObject()["url"].toString());
 		currFile = libPath;
 		
+		if(jo["downloads"].toObject().contains("classifiers")){
+#ifdef Q_OS_WIN
+			QString p = "windows";
+#else
+			QString p = "linux";
+#endif
+			if(jo["downloads"].toObject()["classifiers"].toObject().contains("natives-"+p)){
+				if(!QFile::exists(getfilepath(libPath))){
+					downloadFile(libUrl, libPath);
+					return;
+				}
+				QString u = jo["downloads"].toObject()["classifiers"].toObject()["natives-"+p].toObject()["url"].toString();
+				QString pp = Path.libsPath + jo["downloads"].toObject()["classifiers"].toObject()["natives-"+p].toObject()["path"].toString();
+				if(!QFile::exists(getfilepath(pp))){
+					downloadFile(u, pp);
+					return;
+				}
+			}
+		}
 		if(!QFile::exists(getfilepath(libPath))){
 			if(jo.contains("rules")){
 #ifdef Q_OS_WIN
@@ -400,7 +540,7 @@ void MWin::progressFinish(){
 	currFile = nullptr;
 	switch(progstate){
 		case PState::MANDOWN:
-			manlistimport();
+			purl();
 			break;
 		case PState::MANCHEKSUM:
 			changeProgressState(0, "Checking manifest checksum...", false);
@@ -414,11 +554,13 @@ void MWin::progressFinish(){
 			libdown();
 			break;
 		case PState::ASSDOWN:
-			++ass;
 			assdown();
 			break;
 		case PState::READY2PLAY:
 			launch();
+			break;
+		case PState::FabricDown:
+			fabricDownload();
 			break;
 		default:
 			changeProgressState(0, "Done.", false);
@@ -428,11 +570,10 @@ void MWin::progressFinish(){
 
 void MWin::httpReq(const QUrl &requestedUrl) {
 	reply = qnam.get(QNetworkRequest(requestedUrl));
-	connect(reply, &QNetworkReply::finished, this, &MWin::httpFinish);
 	if(progstate != PState::MANCHEKSUM){
 		connect(reply, &QIODevice::readyRead, this, &MWin::httpRead);
 		connect(reply, &QNetworkReply::downloadProgress, this, &MWin::progress_func);
-		connect(reply, &QNetworkReply::finished, this, &MWin::progressFinish);
+		connect(reply, &QNetworkReply::finished, this, &MWin::httpFinish);
 	}else{
 		connect(reply, &QIODevice::readyRead, this, &MWin::getCheckSum);
 	}
@@ -460,11 +601,15 @@ void MWin::purl(){
 	changeProgressState(0, "Getting version manifest...", false);
 	QString manpath = "yokaiLauncher_manifest.json";
 	dp("Getting version manifest...");
-	progstate = PState::MANDOWN;
-	if(!QFile::exists(getfilepath(manpath)))
-		downloadFile(QUrl("https://vilafox.xyz/api/yokaiLauncher_manifest.json"), manpath);
-	else
+	if(!QFile::exists(getfilepath(manpath))){
+		progstate = PState::MANDOWN;
+		currFile = manpath;
+		dp("Downloading manifest...");
+		downloadFile(QUrl("https://vilafox.xyz/api/yokaiLauncher"), manpath);
+	}else{	
+		progstate = PState::MANCHEKSUM;
 		progressFinish();
+	}
 
 }
 
@@ -499,13 +644,13 @@ void MWin::appshow(){
 
 void MWin::loadconf()
 {
-
 	QString cpath = getfilepath("yokai.yml");
 	QDir d;
 	config = new CMan();
 	config->load(cpath);
 	Path.mcPath = config->getVal("mcdir");
 	bool ism = QVariant(config->getVal("maximized")).toBool();
+	bool ifc = QVariant(config->getVal("isFabric")).toBool();
 	if(ism){
 		ui_mw->showMaximized();
 	}else{
@@ -513,6 +658,8 @@ void MWin::loadconf()
 		ui_mw->resize(config->getVal("width").toInt(), config->getVal("height").toInt());
 	}
 	nickname->setText(config->getVal("nickname"));
+	Qt::CheckState cs = ifc ? Qt::Checked : Qt::Unchecked;
+	fabricb->setCheckState(cs);
 	appshow();
 }
 
@@ -523,8 +670,9 @@ int main(int argc, char *argv[])
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 	QApplication app(argc, argv);
 	app.setStyleSheet(importQss());
+	app.setDesktopFileName("xyz.vilafox.mc.yokaiLauncher");
 	app.setWindowIcon(QIcon(":/assets/icon.svg"));
-	// importFonts();
+	importFonts();
 	MWin n;
 	app.setActiveWindow(&n);
 	n.progstate = PState::INIT;

@@ -40,7 +40,7 @@ FORMS += assets/client.ui
 SOURCES += config_manager.cpp
 SOURCES += launcher.cpp
 RESOURCES += res.qrc
-
+QMAKE_CXXFLAGS += -DBUILDID=$$system(date '+%y%m%d%H%M%S')
 LIBS += -lyaml-cpp
 
 win32:CONFIG += win

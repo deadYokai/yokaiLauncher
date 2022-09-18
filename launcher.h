@@ -24,6 +24,7 @@
 #include <QTextStream> 
 #include <QJsonObject> 
 #include <QCryptographicHash> 
+#include <QCheckBox>
 #include <config_manager.h>
 
 QT_BEGIN_NAMESPACE
@@ -41,7 +42,8 @@ enum class PState {
     VERMANDOWN,
     ASSDOWN,
     LIBDOWN,
-    READY2PLAY
+    READY2PLAY,
+    FabricDown
 };
 
 class MWin : public QMainWindow
@@ -83,24 +85,33 @@ public:
     qsizetype ass = 0;
     qsizetype assm = 0;
     CMan *config;
+    QString fabVer;
+    QString fabMclass;
+    QString fabLibs;
     QStringList getJargs();
     void launch();
     bool checkJava();
+    bool isWhiteSpace(const QString & str);
+    void fabricDownload();
 
 private slots:
     void on_playBtn_clicked();
     void verChanged(const QString &text);
     void mcend(int exitCode, QProcess::ExitStatus ExitStatus);
+    void isFabricbox(int state);
 
 
 private:
     QWidget *ui_mw;
     QPushButton *playBtn;
+    QPushButton *settingsb;
+    QCheckBox *fabricb;
     QWidget *mwCW;
     QMainWindow *mm;
     QLineEdit *nickname;
     QLabel *cNick;
     QLabel *pLabel;
+    QLabel *bid;
     QWidget *pWidget;
     QProgressBar *progressBar;
     QNetworkAccessManager qnam;

@@ -5,5 +5,9 @@
     <file>assets/icon.svg</file>
     <file>assets/style.qss</file>
     <file>assets/defconf.yml</file>
+    <file>assets/e-Ukraine-Bold.otf</file>
+    <file>assets/e-Ukraine-Light.otf</file>
+    <file>assets/e-Ukraine-Thin.otf</file>
+    <file>assets/e-UkraineHead-LOGO.otf</file>
 </qresource>
 </RCC>

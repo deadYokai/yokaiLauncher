@@ -1,5 +1,30 @@
 
-*{font-family: Tahoma;}
+@font-face {
+	font-family: "eUkraineThin";
+	src: url("assets/e-Ukraine-Thin.otf");
+}
+@font-face {
+	font-family: "eUkraine";
+	src: url("assets/e-Ukraine-Light.otf");
+}
+@font-face {
+	font-family: "eUkraineLogo";
+	src: url("assets/e-UkraineHead-LOGO.otf");
+}
+@font-face {
+	font-family: "eUkraine";
+	src: url("assets/e-Ukraine-Bold.otf");
+	font-weight: bold;
+}
+
+*{font-family: eUkraineThin !important;}
+
+#logo{
+	font-family: eUkraineLogo;
+	font-weight: bold;
+}
+
+#bid{ font-size: 14px; }
 
 #bottomWidget, #progressWidget{
 	background: rgba(0,0,0,.8);
@@ -15,6 +40,7 @@
 	background: transparent;
 	border: 2px solid #fff;
 	padding: 2px;
+	height: 28px;
 }
 
 #versionList:hover{
@@ -85,6 +111,10 @@ QPushButton{
 	font-size: 25px;
 	height: 64px;
 	color: #fff;
+}
+
+#settb{
+	font-size: 16px;
 }
 
 QPushButton:hover{

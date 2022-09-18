@@ -52,12 +52,18 @@
     <property name="spacing">
      <number>0</number>
     </property>
-    <item row="0" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-     <widget class="QWidget" name="widget" native="true">
+    <item row="1" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+     <widget class="QWidget" name="Logo" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="maximumSize">
        <size>
         <width>16777215</width>
-        <height>128</height>
+        <height>16777215</height>
        </size>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -76,56 +82,134 @@
        <property name="bottomMargin">
         <number>0</number>
        </property>
-       <item>
-        <widget class="QWidget" name="widget_2" native="true">
+       <item alignment="Qt::AlignHCenter">
+        <widget class="QLabel" name="label_2">
          <property name="maximumSize">
           <size>
-           <width>16777215</width>
-           <height>128</height>
+           <width>256</width>
+           <height>256</height>
           </size>
          </property>
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <item>
-           <widget class="QLabel" name="label_2">
-            <property name="maximumSize">
-             <size>
-              <width>64</width>
-              <height>64</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap resource="../res.qrc">:/assets/icon.svg</pixmap>
-            </property>
-            <property name="scaledContents">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label">
-            <property name="font">
-             <font>
-              <family>Tahoma</family>
-             </font>
-            </property>
-            <property name="text">
-             <string>yokaiLauncher</string>
-            </property>
-            <property name="margin">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="pixmap">
+          <pixmap resource="../res.qrc">:/assets/icon.svg</pixmap>
+         </property>
+         <property name="scaledContents">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item alignment="Qt::AlignHCenter">
+        <widget class="QLabel" name="logo">
+         <property name="font">
+          <font>
+           <family>Tahoma</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>yokaiLauncher</string>
+         </property>
+         <property name="margin">
+          <number>0</number>
+         </property>
         </widget>
        </item>
       </layout>
      </widget>
     </item>
-    <item row="2" column="0">
+    <item row="3" column="0">
+     <widget class="QWidget" name="progressWidget" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>0</height>
+       </size>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <property name="leftMargin">
+        <number>16</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>16</number>
+       </property>
+       <property name="bottomMargin">
+        <number>5</number>
+       </property>
+       <item alignment="Qt::AlignLeft|Qt::AlignBottom">
+        <widget class="QLabel" name="pLabel">
+         <property name="text">
+          <string>Loading assets...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBar">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>8</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>0</width>
+           <height>32</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
+         <property name="value">
+          <number>24</number>
+         </property>
+         <property name="textVisible">
+          <bool>false</bool>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="invertedAppearance">
+          <bool>false</bool>
+         </property>
+         <property name="textDirection">
+          <enum>QProgressBar::TopToBottom</enum>
+         </property>
+         <property name="format">
+          <string>%p%/%m%</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QLabel" name="bid">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>64</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Buildid</string>
+      </property>
+      <property name="margin">
+       <number>12</number>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
      <widget class="QWidget" name="bottomWidget" native="true">
       <property name="minimumSize">
        <size>
@@ -136,7 +220,7 @@
       <property name="maximumSize">
        <size>
         <width>16777215</width>
-        <height>172</height>
+        <height>256</height>
        </size>
       </property>
       <property name="autoFillBackground">
@@ -215,23 +299,54 @@
              <property name="bottomMargin">
               <number>0</number>
              </property>
-             <item alignment="Qt::AlignLeft">
-              <widget class="QLineEdit" name="nickname">
-               <property name="minimumSize">
-                <size>
-                 <width>256</width>
-                 <height>48</height>
-                </size>
-               </property>
-               <property name="placeholderText">
-                <string>Nickname</string>
-               </property>
+             <item alignment="Qt::AlignLeft|Qt::AlignVCenter">
+              <widget class="QWidget" name="verticalWidget" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_5">
+                <item alignment="Qt::AlignBottom">
+                 <widget class="QLineEdit" name="nickname">
+                  <property name="minimumSize">
+                   <size>
+                    <width>256</width>
+                    <height>64</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>64</height>
+                   </size>
+                  </property>
+                  <property name="placeholderText">
+                   <string>Nickname</string>
+                  </property>
+                 </widget>
+                </item>
+                <item alignment="Qt::AlignTop">
+                 <widget class="QPushButton" name="settb">
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>38</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>38</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>Settings</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
              </item>
             </layout>
            </widget>
           </item>
-          <item alignment="Qt::AlignRight">
+          <item alignment="Qt::AlignRight|Qt::AlignVCenter">
            <widget class="QWidget" name="verticalWidget1" native="true">
             <property name="minimumSize">
              <size>
@@ -262,6 +377,22 @@
               <number>0</number>
              </property>
              <item>
+              <widget class="QCheckBox" name="fabricb">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>36</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Enable Fabric</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QComboBox" name="versionList">
                <property name="enabled">
                 <bool>true</bool>
@@ -269,7 +400,7 @@
                <property name="minimumSize">
                 <size>
                  <width>128</width>
-                 <height>0</height>
+                 <height>32</height>
                 </size>
                </property>
                <property name="currentText">
@@ -288,13 +419,13 @@
                <property name="minimumSize">
                 <size>
                  <width>128</width>
-                 <height>0</height>
+                 <height>74</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
                  <width>16777215</width>
-                 <height>64</height>
+                 <height>74</height>
                 </size>
                </property>
                <property name="text">
@@ -306,80 +437,6 @@
            </widget>
           </item>
          </layout>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="QWidget" name="progressWidget" native="true">
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>0</height>
-       </size>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_4">
-       <property name="leftMargin">
-        <number>16</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>16</number>
-       </property>
-       <property name="bottomMargin">
-        <number>5</number>
-       </property>
-       <item alignment="Qt::AlignLeft|Qt::AlignBottom">
-        <widget class="QLabel" name="pLabel">
-         <property name="text">
-          <string>Loading assets...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QProgressBar" name="progressBar">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>8</height>
-          </size>
-         </property>
-         <property name="baseSize">
-          <size>
-           <width>0</width>
-           <height>32</height>
-          </size>
-         </property>
-         <property name="styleSheet">
-          <string notr="true"/>
-         </property>
-         <property name="value">
-          <number>24</number>
-         </property>
-         <property name="textVisible">
-          <bool>false</bool>
-         </property>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="invertedAppearance">
-          <bool>false</bool>
-         </property>
-         <property name="textDirection">
-          <enum>QProgressBar::TopToBottom</enum>
-         </property>
-         <property name="format">
-          <string>%p%/%m%</string>
-         </property>
         </widget>
        </item>
       </layout>
