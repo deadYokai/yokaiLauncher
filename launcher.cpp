@@ -77,7 +77,7 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 	bid = findChild<QLabel*>("bid");
 	bid->setText("Build #" + QString::number(BUILDID));
 
-	ui_mw->setWindowFlags(Qt::Window);
+	mm->setWindowFlags(Qt::Window);
 	
 	QMetaObject::connectSlotsByName( this );
 	connect(vList, &QComboBox::currentTextChanged, this, &MWin::verChanged);
@@ -134,6 +134,10 @@ QStringList MWin::getJargs(){
 	args.append(" -Dminecraft.launcher.version=alpha-0");
 	QString assetsver = currmanj["assets"].toString();
 	QString ver = currmanj["id"].toString();
+	QString paths = ":";
+	#ifdef Q_OS_WIN
+	paths = ";";
+	#endif
 	bool isFabric = QVariant(config->getVal("isFabric")).toBool();
 	if(isFabric) args.append(" -DFabricMcEmu="+currmanj["mainClass"].toString());
 	QString mainclass = isFabric ? fabMclass : currmanj["mainClass"].toString();
@@ -150,10 +154,10 @@ QStringList MWin::getJargs(){
 			QString p = "linux";
 #endif
 			if(jo["downloads"].toObject()["classifiers"].toObject().contains("natives-"+p)){
-				libs.append(libPath + ":");
+				libs.append(libPath + paths);
 				QString u = jo["downloads"].toObject()["classifiers"].toObject()["natives-"+p].toObject()["url"].toString();
 				QString pp = Path.libsPath + jo["downloads"].toObject()["classifiers"].toObject()["natives-"+p].toObject()["path"].toString();
-				libs.append(getfilepath(pp) + ":");
+				libs.append(getfilepath(pp) + paths);
 			}
 		}
 		if(jo.contains("rules")){
@@ -165,13 +169,14 @@ QStringList MWin::getJargs(){
 			if(jo["rules"].toArray()[0].toObject()["os"].toObject()["name"].toString() == "osx")
 #endif
 			{
-				libs.append(libPath + ":");
+				libs.append(libPath + paths);
 			}
 		}else
-			libs.append(libPath + ":");
+			libs.append(libPath + paths);
 	}
 	
 	if(isFabric) libs.append(fabLibs);
+	
 	args.append(" " + libs + getfilepath(Path.verPath+ver+"/"+ver+".jar"));
 	args.append(" " + mainclass);
 
@@ -185,6 +190,8 @@ QStringList MWin::getJargs(){
 	args.append(" --userType legacy");
 	args.append(" --versionType " + currmanj["type"].toString());
 
+	
+	// qDebug() << args;
 	return args.split(" ");
 }
 
@@ -222,6 +229,10 @@ void MWin::fabricDownload(){
 	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
 	QJsonArray ja = jsonResponse.object()["libraries"].toObject()["common"].toArray();
 	fabMclass = jsonResponse.object()["mainClass"].toObject()["client"].toString();
+	QString paths = ":";
+	#ifdef Q_OS_WIN
+	paths = ";";
+	#endif
 	for(QJsonArray::iterator it = ja.begin(); it != ja.end(); ++it){
 		QJsonValue a = *it;
 		QJsonObject jo = a.toObject();
@@ -231,7 +242,7 @@ void MWin::fabricDownload(){
 		QString ver = libMaven[2];
 		QString qpath = apath + "/" + name + "/" + ver + "/" + name + "-" + ver + ".jar";
 		QString libPath = Path.libsPath + qpath;
-		fabLibs.append(getfilepath(libPath)+":");
+		fabLibs.append(getfilepath(libPath)+paths);
 		QUrl libUrl = QUrl(fabricMaven + qpath);
 		currFile = libPath;
 		if(!QFile::exists(getfilepath(libPath))){
@@ -251,8 +262,8 @@ void MWin::fabricDownload(){
 	}
 
 	dp("Fabric enabled");
-	fabLibs.append(getfilepath(libPath)+":");
-	fabLibs.append(getfilepath(fp + ".jar")+":");
+	fabLibs.append(getfilepath(libPath)+paths);
+	fabLibs.append(getfilepath(fp + ".jar")+paths);
 	launch();
 }
 
@@ -260,18 +271,20 @@ bool MWin::checkJava(){
 	bool isJava = (QString::fromLocal8Bit(qgetenv("JAVA_HOME")) == "") ? false : true;
 	
 #ifdef Q_OS_WIN
-	QSettings m("HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\Java Runtime Environment", QSettings::NativeFormat);
+	QSettings m("HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\JDK\\17", QSettings::NativeFormat);
 	if(!m.allKeys().isEmpty()){
-		QString path = m.allKeys()[0];
-		if(m.contains(path)){
-			QString winJhome = m.value(path).toString();
-			isJava = QFile::exists(winJhome + "/bin/java.exe");	
+		if(!m.allKeys().filter("JavaHome").isEmpty()){
+			QString path = m.allKeys().filter("JavaHome")[0];
+			if(m.contains(path)){
+				QString winJhome = m.value(path).toString();
+				isJava = QFile::exists(winJhome + "/bin/java.exe");	
+			}
 		}
 	}
 	progstate = PState::JAVAIN;
 	if(!isJava){
 		currFile = getfilepath("javainstaller.exe");
-		downloadFile(QUrl("https://javadl.oracle.com/webapps/download/AutoDL?BundleId=246808_424b9da4b48848379167015dcc250d8d"), getfilepath("jreinstaller.exe"));
+		downloadFile(QUrl("https://download.oracle.com/java/17/latest/jdk-17_windows-x64_bin.exe"), getfilepath("jreinstaller.exe"));
 	}else{
 		if(!QFile::exists(getfilepath("jreinstaller.exe"))){
 			QFile::remove(getfilepath("jreinstaller.exe"));	
@@ -299,6 +312,16 @@ void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
 		ui_mw->setWindowState(ui_mw->windowState() & ~Qt::WindowMinimized);
 }
 
+void MWin::re(){
+	QProcess *p = qobject_cast<QProcess*>(sender());
+	p->setReadChannel(QProcess::StandardError);
+	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+	while(p->canReadLine())
+	{
+		pp->appendPlainText(p->readLine().replace("\n", ""));
+	}
+
+}
 void MWin::rr(){
 	QProcess *p = qobject_cast<QProcess*>(sender());
 	p->setReadChannel(QProcess::StandardOutput);
@@ -331,6 +354,11 @@ void MWin::launch(){
 		return;
 	}
 	QString java_home = QString::fromLocal8Bit(qgetenv("JAVA_HOME"));
+	#ifdef Q_OS_WIN
+	QSettings m("HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\Java Runtime Environment", QSettings::NativeFormat);
+	QString path = m.allKeys().filter("JavaHome")[0];
+	java_home = m.value(path).toString();
+	#endif
 	QString jvm = java_home + "/bin/java";
 	qDebug() << "Launching...";
 
@@ -338,15 +366,17 @@ void MWin::launch(){
 	pp->appendPlainText("Launching...");
 	#ifdef Q_OS_WIN
 	if(!debug) jvm.append("w");
+	jvm.append(".exe");
 	#endif
 	QStringList args = getJargs();
 	process = new QProcess(this);
 	run = true;
-	qDebug() << QDir::cleanPath(jvm);
+	// qDebug() << QDir::cleanPath(jvm);
 	pp->appendPlainText(QDir::cleanPath(jvm));
 	connect(process, SIGNAL(finished(int , QProcess::ExitStatus )), this, SLOT(mcend(int , QProcess::ExitStatus )));
 	if(debug){
 		connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(rr()));
+		connect(process, SIGNAL(readyReadStandardError()), this, SLOT(re()));
 	}else
 		ui_mw->setWindowState(Qt::WindowMinimized);
 	changeProgressState(0, "Launching...", false);

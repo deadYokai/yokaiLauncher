@@ -105,7 +105,7 @@ private slots:
     void mcend(int exitCode, QProcess::ExitStatus ExitStatus);
     void isFabricbox(int state);
     void rr();
-
+    void re();
 
 private:
     QWidget *ui_mw;
