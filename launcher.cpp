@@ -7,7 +7,9 @@
 
 using namespace std;
 
-void dp(string a){cout << a << endl;}
+void dp(string a){
+	cout << a << endl;
+}
 void dp(char a){cout << a << endl;}
 void dp(int a){cout << a << endl;}
 void dp(double a){cout << a << endl;}
@@ -74,7 +76,9 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 	settingsb = findChild<QPushButton*>("settb");
 	bid = findChild<QLabel*>("bid");
 	bid->setText("Build #" + QString::number(BUILDID));
-	this->setWindowFlags(Qt::Window);
+
+	ui_mw->setWindowFlags(Qt::Window);
+	
 	QMetaObject::connectSlotsByName( this );
 	connect(vList, &QComboBox::currentTextChanged, this, &MWin::verChanged);
 	connect(fabricb, &QCheckBox::stateChanged, this, &MWin::isFabricbox);
@@ -188,14 +192,14 @@ void MWin::fabricDownload(){
 	QString fabricMaven = "https://maven.fabricmc.net/";
 	QString fabricMcMavenDir = "net/fabricmc/";
 	QString fabricMavenDir = fabricMcMavenDir + "fabric-loader/";
-	QString fp = "fabric/fabric-loader-"+fabVer;
+	QString fp = ".fabric/fabric-loader-"+fabVer;
 	QString path = fp +".json";
 	QString fab = fabricMaven+fabricMavenDir+fabVer+"/fabric-loader-"+fabVer;
 	progstate = PState::FabricDown;
 	if(!QFile::exists(getfilepath(path))){
 		QFileInfo fi(getfilepath(path));
 		QDir dir(fi.dir().path());
-		dir.setNameFilters(QStringList() << "fabric-loader-*.*");
+		dir.setNameFilters(QStringList() << "fabric-loader-*.*\\.jar" << "fabric-loader-*.*\\.json");
 		dir.setFilter(QDir::Files);
 		foreach(QString dirFile, dir.entryList())
 		{
@@ -253,7 +257,29 @@ void MWin::fabricDownload(){
 }
 
 bool MWin::checkJava(){
-	return (QString::fromLocal8Bit(qgetenv("JAVA_HOME")) == "") ? false : true;
+	bool isJava = (QString::fromLocal8Bit(qgetenv("JAVA_HOME")) == "") ? false : true;
+	
+#ifdef Q_OS_WIN
+	QSettings m("HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\Java Runtime Environment", QSettings::NativeFormat);
+	if(!m.allKeys().isEmpty()){
+		QString path = m.allKeys()[0];
+		if(m.contains(path)){
+			QString winJhome = m.value(path).toString();
+			isJava = QFile::exists(winJhome + "/bin/java.exe");	
+		}
+	}
+	progstate = PState::JAVAIN;
+	if(!isJava){
+		currFile = getfilepath("javainstaller.exe");
+		downloadFile(QUrl("https://javadl.oracle.com/webapps/download/AutoDL?BundleId=246808_424b9da4b48848379167015dcc250d8d"), getfilepath("jreinstaller.exe"));
+	}else{
+		if(!QFile::exists(getfilepath("jreinstaller.exe"))){
+			QFile::remove(getfilepath("jreinstaller.exe"));	
+		}
+	}
+#endif
+
+	return isJava;
 }
 
 void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
@@ -285,27 +311,42 @@ void MWin::rr(){
 
 }
 
+void MWin::javainstall(){
+	qDebug() << "JAVA INSTALL";
+	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+	pp->appendPlainText("JAVA INSTALL");
+	QProcess *p = new QProcess(this);
+	p->startDetached(getfilepath("javainstaller.exe"));
+	disableControls(false);
+	changeProgressState(0, "Install java", false);
+	progstate = PState::INIT;
+}
+
 void MWin::launch(){
 	if(!checkJava()){
-		qFatal("Err: Java not found!");
+
+		QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+		pp->appendPlainText("== Java not found!");
+		qDebug() << "Err: Java not found!";
 		return;
 	}
 	QString java_home = QString::fromLocal8Bit(qgetenv("JAVA_HOME"));
-	#ifdef Q_OS_WIN
-	QString jvm = java_home + "/bin/javaw";
-	#else
 	QString jvm = java_home + "/bin/java";
+	qDebug() << "Launching...";
+
+	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+	pp->appendPlainText("Launching...");
+	#ifdef Q_OS_WIN
+	if(!debug) jvm.append("w");
 	#endif
 	QStringList args = getJargs();
 	process = new QProcess(this);
 	run = true;
-	
+	qDebug() << QDir::cleanPath(jvm);
+	pp->appendPlainText(QDir::cleanPath(jvm));
 	connect(process, SIGNAL(finished(int , QProcess::ExitStatus )), this, SLOT(mcend(int , QProcess::ExitStatus )));
 	if(debug){
 		connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(rr()));
-		dcon = loadUiFile("dcon", ui_mw);
-		dcon->setWindowFlags(Qt::Window);
-		dcon->show();
 	}else
 		ui_mw->setWindowState(Qt::WindowMinimized);
 	changeProgressState(0, "Launching...", false);
@@ -521,8 +562,7 @@ void MWin::libdown(){
 				return;
 			}
 		}
-	}
-	changeProgressState(0, "Done.", false);
+	}\
 	progstate = PState::ASSDOWN;
 	assdown();
 }
@@ -581,6 +621,9 @@ void MWin::progressFinish(){
 			break;
 		case PState::READY2PLAY:
 			launch();
+			break;
+		case PState::JAVAIN:
+			javainstall();
 			break;
 		case PState::FabricDown:
 			fabricDownload();
@@ -660,6 +703,14 @@ void MWin::appshow(){
     button->setWindow(windowHandle());
     button->setOverlayIcon(QIcon(":/assets/icon.svg"));
 #endif
+
+	if(debug){
+		dcon = loadUiFile("dcon", ui_mw);
+		dcon->setWindowModality(Qt::NonModal);
+		dcon->setWindowFlags(Qt::Window);
+		dcon->show();
+	}
+
 	disableControls();
 	purl();
 	
@@ -681,6 +732,8 @@ void MWin::loadconf()
 	}catch(const std::exception& e){
 		debug = false;
 	}
+	debug = true;
+
 	if(ism){
 		ui_mw->showMaximized();
 	}else{

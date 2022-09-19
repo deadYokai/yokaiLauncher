@@ -26,6 +26,7 @@
 #include <QCryptographicHash> 
 #include <QCheckBox>
 #include <QPlainTextEdit> 
+#include <QSettings> 
 #include <config_manager.h>
 
 QT_BEGIN_NAMESPACE
@@ -44,7 +45,8 @@ enum class PState {
     ASSDOWN,
     LIBDOWN,
     READY2PLAY,
-    FabricDown
+    FabricDown,
+    JAVAIN
 };
 
 class MWin : public QMainWindow
@@ -95,6 +97,7 @@ public:
     bool isWhiteSpace(const QString & str);
     void fabricDownload();
     bool debug;
+    void javainstall();
 
 private slots:
     void on_playBtn_clicked();
