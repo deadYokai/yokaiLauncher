@@ -25,6 +25,7 @@
 #include <QJsonObject> 
 #include <QCryptographicHash> 
 #include <QCheckBox>
+#include <QPlainTextEdit> 
 #include <config_manager.h>
 
 QT_BEGIN_NAMESPACE
@@ -93,16 +94,19 @@ public:
     bool checkJava();
     bool isWhiteSpace(const QString & str);
     void fabricDownload();
+    bool debug;
 
 private slots:
     void on_playBtn_clicked();
     void verChanged(const QString &text);
     void mcend(int exitCode, QProcess::ExitStatus ExitStatus);
     void isFabricbox(int state);
+    void rr();
 
 
 private:
     QWidget *ui_mw;
+    QWidget *dcon;
     QPushButton *playBtn;
     QPushButton *settingsb;
     QCheckBox *fabricb;

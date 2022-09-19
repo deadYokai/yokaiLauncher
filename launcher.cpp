@@ -61,6 +61,7 @@ void MWin::isFabricbox(int state){
 MWin::MWin(QWidget *parent) : QMainWindow(parent)
 {
 	ui_mw = loadUiFile("client", this);
+	// settingsWidget = loadUiFile("settw", ui_mw);
 	mm = findChild<QMainWindow*>("MainWindow");
 	mwCW = findChild<QWidget*>("centralwidget");
 	nickname = findChild<QLineEdit*>("nickname");
@@ -258,6 +259,10 @@ bool MWin::checkJava(){
 void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
 	disableControls(false);
 	changeProgressState(0, "Game exit", false);
+	if(debug){
+		QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+		pp->appendPlainText("Exit code: " + QString::number(exitCode));
+	}
 	qDebug() << "Exit code: " << exitCode;
 	qDebug() << "Exit status: " << ExitStatus;
 	run = false;
@@ -266,6 +271,18 @@ void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
 		ui_mw->setWindowState(Qt::WindowMaximized);
 	else
 		ui_mw->setWindowState(ui_mw->windowState() & ~Qt::WindowMinimized);
+}
+
+void MWin::rr(){
+	QProcess *p = qobject_cast<QProcess*>(sender());
+	p->setReadChannel(QProcess::StandardOutput);
+	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+	pp->appendPlainText("Minecraft launching...");
+	while(p->canReadLine())
+	{
+		pp->appendPlainText(p->readLine().replace("\n", ""));
+	}
+
 }
 
 void MWin::launch(){
@@ -282,12 +299,18 @@ void MWin::launch(){
 	QStringList args = getJargs();
 	process = new QProcess(this);
 	run = true;
+	
 	connect(process, SIGNAL(finished(int , QProcess::ExitStatus )), this, SLOT(mcend(int , QProcess::ExitStatus )));
-	ui_mw->setWindowState(Qt::WindowMinimized);
+	if(debug){
+		connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(rr()));
+		dcon = loadUiFile("dcon", ui_mw);
+		dcon->setWindowFlags(Qt::Window);
+		dcon->show();
+	}else
+		ui_mw->setWindowState(Qt::WindowMinimized);
 	changeProgressState(0, "Launching...", false);
 	disableControls();
 	process->start(QDir::cleanPath(jvm), args);
-	// process->execute(QDir::cleanPath(jvm), args);
 	
 }
 
@@ -436,7 +459,7 @@ void MWin::assdown(){
 	ass = 0;
 	assm = 0;
 	dp("Ready to play");
-	disableControls(false);
+	// disableControls(false);
 	progstate = PState::INIT;
 	if(isWhiteSpace(nickname->text())){
 		dp("Warn: spaces in nickname");
@@ -651,6 +674,13 @@ void MWin::loadconf()
 	Path.mcPath = config->getVal("mcdir");
 	bool ism = QVariant(config->getVal("maximized")).toBool();
 	bool ifc = QVariant(config->getVal("isFabric")).toBool();
+	try{
+		debug = QVariant(config->getVal("_debug")).toBool();
+		dp("=== DEBUG MODE ENABLED ===");
+		bid->setText(bid->text() + " | DEBUG MODE");
+	}catch(const std::exception& e){
+		debug = false;
+	}
 	if(ism){
 		ui_mw->showMaximized();
 	}else{

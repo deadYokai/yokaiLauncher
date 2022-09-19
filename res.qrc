@@ -1,6 +1,5 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>assets/client.ui</file>
     <file>assets/bg_1.png</file>
     <file>assets/icon.svg</file>
     <file>assets/style.qss</file>
@@ -9,5 +8,7 @@
     <file>assets/e-Ukraine-Light.otf</file>
     <file>assets/e-Ukraine-Thin.otf</file>
     <file>assets/e-UkraineHead-LOGO.otf</file>
+    <file>assets/client.ui</file>
+    <file>assets/dcon.ui</file>
 </qresource>
 </RCC>
