@@ -271,7 +271,7 @@ bool MWin::checkJava(){
 	bool isJava = (QString::fromLocal8Bit(qgetenv("JAVA_HOME")) == "") ? false : true;
 	
 #ifdef Q_OS_WIN
-	QSettings m("HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\JDK\\17", QSettings::NativeFormat);
+	QSettings m("HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\JDK", QSettings::NativeFormat);
 	if(!m.allKeys().isEmpty()){
 		if(!m.allKeys().filter("JavaHome").isEmpty()){
 			QString path = m.allKeys().filter("JavaHome")[0];
@@ -281,9 +281,9 @@ bool MWin::checkJava(){
 			}
 		}
 	}
-	progstate = PState::JAVAIN;
 	if(!isJava){
-		currFile = getfilepath("javainstaller.exe");
+		progstate = PState::JAVAIN;
+		currFile = getfilepath("jreinstaller.exe");
 		downloadFile(QUrl("https://download.oracle.com/java/17/latest/jdk-17_windows-x64_bin.exe"), getfilepath("jreinstaller.exe"));
 	}else{
 		if(!QFile::exists(getfilepath("jreinstaller.exe"))){
@@ -313,13 +313,13 @@ void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
 }
 
 void MWin::re(){
-	QProcess *p = qobject_cast<QProcess*>(sender());
-	p->setReadChannel(QProcess::StandardError);
-	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
-	while(p->canReadLine())
-	{
-		pp->appendPlainText(p->readLine().replace("\n", ""));
-	}
+	// QProcess *p = qobject_cast<QProcess*>(sender());
+	// p->setReadChannel(QProcess::StandardError);
+	// QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+	// while(p->canReadLine())
+	// {
+	// 	pp->appendPlainText(p->readLine().replace("\n", ""));
+	// }
 
 }
 void MWin::rr(){
@@ -339,7 +339,7 @@ void MWin::javainstall(){
 	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
 	pp->appendPlainText("JAVA INSTALL");
 	QProcess *p = new QProcess(this);
-	p->startDetached(getfilepath("javainstaller.exe"));
+	p->startDetached(getfilepath("jreinstaller.exe"));
 	disableControls(false);
 	changeProgressState(0, "Install java", false);
 	progstate = PState::INIT;
@@ -348,14 +348,14 @@ void MWin::javainstall(){
 void MWin::launch(){
 	if(!checkJava()){
 
-		QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
-		pp->appendPlainText("== Java not found!");
+		QPlainTextEdit *pp1 = dcon->findChild<QPlainTextEdit*>("debugT");
+		pp1->appendPlainText("== Java not found!");
 		qDebug() << "Err: Java not found!";
 		return;
 	}
 	QString java_home = QString::fromLocal8Bit(qgetenv("JAVA_HOME"));
 	#ifdef Q_OS_WIN
-	QSettings m("HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\Java Runtime Environment", QSettings::NativeFormat);
+	QSettings m("HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\JDK", QSettings::NativeFormat);
 	QString path = m.allKeys().filter("JavaHome")[0];
 	java_home = m.value(path).toString();
 	#endif
@@ -371,12 +371,12 @@ void MWin::launch(){
 	QStringList args = getJargs();
 	process = new QProcess(this);
 	run = true;
-	// qDebug() << QDir::cleanPath(jvm);
+	qDebug() << QDir::cleanPath(jvm);
 	pp->appendPlainText(QDir::cleanPath(jvm));
 	connect(process, SIGNAL(finished(int , QProcess::ExitStatus )), this, SLOT(mcend(int , QProcess::ExitStatus )));
 	if(debug){
 		connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(rr()));
-		connect(process, SIGNAL(readyReadStandardError()), this, SLOT(re()));
+		// connect(process, SIGNAL(readyReadStandardError()), this, SLOT(re()));
 	}else
 		ui_mw->setWindowState(Qt::WindowMinimized);
 	changeProgressState(0, "Launching...", false);
