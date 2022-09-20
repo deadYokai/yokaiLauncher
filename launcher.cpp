@@ -264,35 +264,68 @@ void MWin::fabricDownload(){
 	dp("Fabric enabled");
 	fabLibs.append(getfilepath(libPath)+paths);
 	fabLibs.append(getfilepath(fp + ".jar")+paths);
-	launch();
+	checkJava();
 }
 
-bool MWin::checkJava(){
-	bool isJava = (QString::fromLocal8Bit(qgetenv("JAVA_HOME")) == "") ? false : true;
+void MWin::checkJava(){
+	javaRuntimeDir = QString::fromLocal8Bit(qgetenv("JAVA_HOME"));
 	
 #ifdef Q_OS_WIN
-	QSettings m("HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\JDK", QSettings::NativeFormat);
-	if(!m.allKeys().isEmpty()){
-		if(!m.allKeys().filter("JavaHome").isEmpty()){
-			QString path = m.allKeys().filter("JavaHome")[0];
-			if(m.contains(path)){
-				QString winJhome = m.value(path).toString();
-				isJava = QFile::exists(winJhome + "/bin/java.exe");	
+	
+	QUrl jmanifest = QUrl("https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json");
+	QString winp = "x86";
+	#ifdef Q_OS_WIN64
+		winp = "x64";
+	#endif
+	progstate = PState::JAVAIN;
+
+	if(!QFile::exists(getfilepath("java/all.json"))){
+		currFile = getfilepath("java/all.json");
+		downloadFile(jmanifest, "java/all.json");
+		return;
+	}
+	
+	
+	QString runtimever = currmanj["javaVersion"].toObject()["component"].toString();
+	if(!QFile::exists(getfilepath("java/"+runtimever+"/windows-"+winp+".json"))){
+		currFile = getfilepath("java/"+runtimever+"/windows-"+winp+".json");
+		QFile f(getfilepath("java/all.json"));
+		if (!f.open(QFile::ReadOnly | QFile::Text)) return;
+		QTextStream in(&f);
+		QString str = in.readAll();
+		QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
+		QUrl runtimeurl = QUrl(jsonResponse.object()["windows-"+winp].toObject()[runtimever].toArray()[0].toObject()["manifest"].toObject()["url"].toString());
+		downloadFile(runtimeurl, "java/"+runtimever+"/windows-"+winp+".json");
+		f.close();
+		return;
+	}
+
+	QFile f(getfilepath("java/"+runtimever+"/windows-"+winp+".json"));
+	if (!f.open(QFile::ReadOnly | QFile::Text)) return;
+	QTextStream in(&f);
+	QString str = in.readAll();
+	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
+	QJsonObject files = jsonResponse.object()["files"].toObject();
+	QStringList keys = files.keys();
+	for (QStringList::iterator it = keys.begin(); it != keys.end(); ++it) {
+		QString b = *it;
+		QJsonObject a = files[b].toObject();
+		if(a["type"] == "file"){
+			if(!QFile::exists(getfilepath("java/"+runtimever+"/windows-"+winp+"/"+b))){
+				QUrl uri = QUrl(a["downloads"].toObject()["raw"].toObject()["url"].toString());
+				currFile = getfilepath("java/"+runtimever+"/windows-"+winp+"/"+b);
+				downloadFile(uri, "java/"+runtimever+"/windows-"+winp+"/"+b);
+				return;
 			}
 		}
-	}
-	if(!isJava){
-		progstate = PState::JAVAIN;
-		currFile = getfilepath("jreinstaller.exe");
-		downloadFile(QUrl("https://download.oracle.com/java/17/latest/jdk-17_windows-x64_bin.exe"), getfilepath("jreinstaller.exe"));
-	}else{
-		if(!QFile::exists(getfilepath("jreinstaller.exe"))){
-			QFile::remove(getfilepath("jreinstaller.exe"));	
-		}
-	}
-#endif
+	}	
 
-	return isJava;
+	javaRuntimeDir = getfilepath("java/"+runtimever+"/windows-"+winp+"/");
+
+	progstate = PState::INIT;
+
+#endif
+	launch();
 }
 
 void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
@@ -313,13 +346,13 @@ void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
 }
 
 void MWin::re(){
-	// QProcess *p = qobject_cast<QProcess*>(sender());
-	// p->setReadChannel(QProcess::StandardError);
-	// QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
-	// while(p->canReadLine())
-	// {
-	// 	pp->appendPlainText(p->readLine().replace("\n", ""));
-	// }
+	QProcess *p = qobject_cast<QProcess*>(sender());
+	p->setReadChannel(QProcess::StandardError);
+	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+	while(p->canReadLine())
+	{
+		pp->appendPlainText(p->readLine().replace("\n", ""));
+	}
 
 }
 void MWin::rr(){
@@ -334,32 +367,9 @@ void MWin::rr(){
 
 }
 
-void MWin::javainstall(){
-	qDebug() << "JAVA INSTALL";
-	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
-	pp->appendPlainText("JAVA INSTALL");
-	QProcess *p = new QProcess(this);
-	p->startDetached(getfilepath("jreinstaller.exe"));
-	disableControls(false);
-	changeProgressState(0, "Install java", false);
-	progstate = PState::INIT;
-}
-
 void MWin::launch(){
-	if(!checkJava()){
 
-		QPlainTextEdit *pp1 = dcon->findChild<QPlainTextEdit*>("debugT");
-		pp1->appendPlainText("== Java not found!");
-		qDebug() << "Err: Java not found!";
-		return;
-	}
-	QString java_home = QString::fromLocal8Bit(qgetenv("JAVA_HOME"));
-	#ifdef Q_OS_WIN
-	QSettings m("HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\JDK", QSettings::NativeFormat);
-	QString path = m.allKeys().filter("JavaHome")[0];
-	java_home = m.value(path).toString();
-	#endif
-	QString jvm = java_home + "/bin/java";
+	QString jvm = javaRuntimeDir + "/bin/java";
 	qDebug() << "Launching...";
 
 	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
@@ -376,7 +386,7 @@ void MWin::launch(){
 	connect(process, SIGNAL(finished(int , QProcess::ExitStatus )), this, SLOT(mcend(int , QProcess::ExitStatus )));
 	if(debug){
 		connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(rr()));
-		// connect(process, SIGNAL(readyReadStandardError()), this, SLOT(re()));
+		connect(process, SIGNAL(readyReadStandardError()), this, SLOT(re()));
 	}else
 		ui_mw->setWindowState(Qt::WindowMinimized);
 	changeProgressState(0, "Launching...", false);
@@ -460,7 +470,11 @@ void MWin::progress_func(qint64 bytesRead, qint64 totalBytes)
 	}else{
 		if(currFile != nullptr){
 			QFileInfo fi(currFile);
-			changeProgressState((int)bytesRead, (int)totalBytes, fi.fileName());
+			QString s = "Downloading: ";
+			if(progstate == PState::JAVAIN){
+				s = "Installing java: ";
+			}
+			changeProgressState((int)bytesRead, (int)totalBytes, s + fi.fileName());
 		}
 		else
 			changeProgressState((int)bytesRead, (int)totalBytes, QString::fromStdString((int)bytesRead+"/"+(int)totalBytes));
@@ -542,7 +556,7 @@ void MWin::assdown(){
 		fabricDownload();
 		return;
 	}
-	else launch();
+	else checkJava();
 }
 
 void MWin::libdown(){
@@ -650,10 +664,10 @@ void MWin::progressFinish(){
 			assdown();
 			break;
 		case PState::READY2PLAY:
-			launch();
+			checkJava();
 			break;
 		case PState::JAVAIN:
-			javainstall();
+			checkJava();
 			break;
 		case PState::FabricDown:
 			fabricDownload();

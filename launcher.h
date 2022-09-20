@@ -93,11 +93,11 @@ public:
     QString fabLibs;
     QStringList getJargs();
     void launch();
-    bool checkJava();
+    void checkJava();
     bool isWhiteSpace(const QString & str);
     void fabricDownload();
     bool debug;
-    void javainstall();
+    QString javaRuntimeDir;
 
 private slots:
     void on_playBtn_clicked();
