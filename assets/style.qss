@@ -66,6 +66,7 @@ QCheckBox{
 	font-size: 18px;
 	border-bottom: 2px solid transparent;
 	padding: 2px;
+	color: #fff;
 }
 
 QCheckBox:hover{
