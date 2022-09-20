@@ -44,8 +44,8 @@ LIBS += -lyaml-cpp
 
 win32:CONFIG += win
 win64:CONFIG += win
-win32:CONFIG += console
-win64:CONFIG += console
+#win32:CONFIG += console
+#win64:CONFIG += console
 win:LIBS += -liconv -lcharset -ladvapi32 -lcrypt32 -lwldap32 -lzstd -lz -lws2_32 -lpthread
 win:RC_ICONS += assets/0.ico
 win:QT += winextras

@@ -1,18 +1,19 @@
 #include <launcher.h>
 #include <fstream>
-
+#include <QDialog>
+#include <limits>
 #ifdef Q_OS_WIN
+#include <windows.h>
 #include <QWinTaskbarButton>
 #endif
 
-using namespace std;
 
-void dp(string a){
-	cout << a << endl;
+void dp(std::string a){
+	std::cout << a << std::endl;
 }
-void dp(char a){cout << a << endl;}
-void dp(int a){cout << a << endl;}
-void dp(double a){cout << a << endl;}
+void dp(char a){std::cout << a << std::endl;}
+void dp(int a){std::cout << a << std::endl;}
+void dp(double a){std::cout << a << std::endl;}
 
 static QWidget *loadUiFile(QString page, QWidget *parent = nullptr)
 {
@@ -60,28 +61,114 @@ void MWin::isFabricbox(int state){
 		config->setVal("isFabric", false);
 }
 
+uint64_t getSystemRam()
+{
+#ifdef Q_OS_WIN
+	MEMORYSTATUSEX status;
+	status.dwLength = sizeof(status);
+	GlobalMemoryStatusEx( &status );
+	return (uint64_t)status.ullTotalPhys;
+#else
+	std::string token;
+	std::ifstream file("/proc/meminfo");
+	while(file >> token)
+	{
+		if(token == "MemTotal:")
+		{
+			uint64_t mem;
+			if(file >> mem)
+			{
+				return mem * 1024ull;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+		file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	}
+	return 0;
+#endif
+}
+
+void MWin::settbtn_click(){
+
+	QCheckBox *isf = settingsWidget->findChild<QCheckBox*>("isMcFullscreen");
+	QLineEdit *jvma = settingsWidget->findChild<QLineEdit*>("jvmaddargs");
+	QSlider *rams = settingsWidget->findChild<QSlider*>("ramslider");
+	QLabel *mml = settingsWidget->findChild<QLabel*>("maxmemLabel");
+	QLabel *cram = settingsWidget->findChild<QLabel*>("currRam");
+
+	bool ifsc = QVariant(config->getVal("isFullscreen")).toBool();
+	isf->setCheckState(ifsc ? Qt::Checked : Qt::Unchecked);
+
+	jvma->setText(config->getVal("jvmargs"));
+
+	uint64_t mbRam = getSystemRam() / (1024ul * 1024ul);	
+
+	rams->setMaximum(mbRam);
+	rams->setMinimum(2048);
+	connect(rams, &QSlider::valueChanged, [=](int value){
+		cram->setText("Current RAM: " + QString::number(value) + "MB");
+	});
+
+	mml->setText(QString::number(mbRam/1024) + "GB");
+	cram->setText("Current RAM: " + QString::number(rams->value()) + "MB");
+
+	pWidget->hide();
+	mwCW->hide();
+	bwi->hide();
+	uwi->show();
+}
+
 MWin::MWin(QWidget *parent) : QMainWindow(parent)
 {
 	ui_mw = loadUiFile("client", this);
-	// settingsWidget = loadUiFile("settw", ui_mw);
-	mm = findChild<QMainWindow*>("MainWindow");
-	mwCW = findChild<QWidget*>("centralwidget");
+	mm = findChild<QWidget*>("ClientForm");
+	mwCW = findChild<QWidget*>("Logo");
 	nickname = findChild<QLineEdit*>("nickname");
 	pWidget = findChild<QWidget*>("progressWidget");
 	vList = findChild<QComboBox*>("versionList");
 	pLabel = findChild<QLabel*>("pLabel");
+	bwi = findChild<QWidget*>("bottomWidget");
 	progressBar = findChild<QProgressBar*>("progressBar");
 	playBtn = findChild<QPushButton*>("playBtn");
 	fabricb = findChild<QCheckBox*>("fabricb");
 	settingsb = findChild<QPushButton*>("settb");
-	bid = findChild<QLabel*>("bid");
+	uwi = findChild<QWidget*>("widget");
+	
+	QVBoxLayout *l = new QVBoxLayout(uwi);
+	uwi->setLayout(l);
+	settingsWidget = loadUiFile("settw", uwi);
+	l->addWidget(settingsWidget);
+	uwi->hide();
+	
+	bid = new QLabel(ui_mw);
+	bid->setStyleSheet("font-size: 14px");
+	bid->setGeometry(8, 8, 1000, 32);
+	settsavebtn = settingsWidget->findChild<QPushButton*>("settsaveb");
 	bid->setText("Build #" + QString::number(BUILDID));
 
-	mm->setWindowFlags(Qt::Window);
+	setWindowFlags(Qt::Window);
+	ui_mw->setWindowFlags(Qt::Window);
 	
 	QMetaObject::connectSlotsByName( this );
 	connect(vList, &QComboBox::currentTextChanged, this, &MWin::verChanged);
 	connect(fabricb, &QCheckBox::stateChanged, this, &MWin::isFabricbox);
+	connect(settingsb, &QPushButton::clicked, this, &MWin::settbtn_click);
+	connect(settsavebtn, &QPushButton::clicked, this, [=](){
+		QCheckBox *isf = settingsWidget->findChild<QCheckBox*>("isMcFullscreen");
+		QLineEdit *jvma = settingsWidget->findChild<QLineEdit*>("jvmaddargs");
+		QSlider *rams = settingsWidget->findChild<QSlider*>("ramslider");
+		config->setVal("ram", rams->value());
+		config->setVal("isFullscreen", ((isf->checkState() == Qt::Checked) ? 1 : 0));
+		qDebug() << (isf->checkState() == Qt::Checked);
+		config->setVal("jvmargs", jvma->text());
+		pWidget->show();
+		mwCW->show();
+		bwi->show();
+		uwi->hide();
+	});
 }
 
 MWin::~MWin(){
@@ -92,6 +179,26 @@ MWin::~MWin(){
 	}
 	config->setVal("maximized", mm->isMaximized());
 	dp("===============================\n");
+}
+
+void MWin::msgBox(QString msg){
+	QDialog *box = new QDialog(ui_mw);
+	box->setWindowModality(Qt::WindowModal);
+	QPushButton *btn = new QPushButton("OK", box);
+	QLabel *label = new QLabel(msg, box);
+	QVBoxLayout *lay = new QVBoxLayout();
+	lay->addWidget(label);
+	lay->addWidget(btn);
+	box->setLayout(lay);
+	btn->setStyleSheet("font-size: 18px");
+	label->setStyleSheet("font-size: 16px");
+	btn->setMaximumHeight(32);
+	lay->setAlignment(label, Qt::AlignHCenter | Qt::AlignVCenter);
+	box->setFixedSize(500, 300);
+	box->open();
+	connect(btn, &QPushButton::clicked, this, [=]() { 
+		box->close();
+	});
 }
 
 
@@ -132,6 +239,9 @@ QStringList MWin::getJargs(){
 	QString args = config->getVal("jvmargs");
 	args.append("-Dminecraft.launcher.brand=yokai");
 	args.append(" -Dminecraft.launcher.version=alpha-0");
+	args.append(" -Xms2G");
+	QString mem = config->getVal("ram");
+	args.append(" -Xmx" + mem + "M");
 	QString assetsver = currmanj["assets"].toString();
 	QString ver = currmanj["id"].toString();
 	QString paths = ":";
@@ -190,6 +300,8 @@ QStringList MWin::getJargs(){
 	args.append(" --userType legacy");
 	args.append(" --versionType " + currmanj["type"].toString());
 
+	bool isF = QVariant(config->getVal("isFullscreen")).toBool();
+	if(isF) args.append(" --fullscreen");
 	
 	// qDebug() << args;
 	return args.split(" ");
@@ -269,7 +381,7 @@ void MWin::fabricDownload(){
 
 void MWin::checkJava(){
 	javaRuntimeDir = QString::fromLocal8Bit(qgetenv("JAVA_HOME"));
-	
+	qDebug() << "Java init";
 #ifdef Q_OS_WIN
 	
 	QUrl jmanifest = QUrl("https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json");
@@ -371,9 +483,7 @@ void MWin::launch(){
 
 	QString jvm = javaRuntimeDir + "/bin/java";
 	qDebug() << "Launching...";
-
-	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
-	pp->appendPlainText("Launching...");
+	
 	#ifdef Q_OS_WIN
 	if(!debug) jvm.append("w");
 	jvm.append(".exe");
@@ -381,8 +491,10 @@ void MWin::launch(){
 	QStringList args = getJargs();
 	process = new QProcess(this);
 	run = true;
-	qDebug() << QDir::cleanPath(jvm);
-	pp->appendPlainText(QDir::cleanPath(jvm));
+	if(debug){
+		QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+		pp->appendPlainText("Launching...");
+	}
 	connect(process, SIGNAL(finished(int , QProcess::ExitStatus )), this, SLOT(mcend(int , QProcess::ExitStatus )));
 	if(debug){
 		connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(rr()));
@@ -424,6 +536,11 @@ void MWin::httpFinish(){
 			file.reset();
 		}
 		if (reply->error()) {
+			if(reply->error() == QNetworkReply::ContentNotFoundError && progstate == PState::FabricDown){
+				msgBox("Fabric not supported in version: "+currmanj["id"].toString());
+				progstate = PState::INIT;
+				progressFinish();
+			}
 			QFile::remove(fi.absoluteFilePath());
 			qDebug() << QString("Download failed:\n%1.").arg(reply->errorString());
 			
@@ -448,7 +565,8 @@ void MWin::httpFinish(){
 		}
         httpReq(redirectedUrl);
         return;
-    }
+    }	
+	
 	progressFinish();
 }
 
@@ -544,11 +662,17 @@ void MWin::assdown(){
 	ass = 0;
 	assm = 0;
 	dp("Ready to play");
-	// disableControls(false);
 	progstate = PState::INIT;
 	if(isWhiteSpace(nickname->text())){
 		dp("Warn: spaces in nickname");
 		changeProgressState(0, "Warn: spaces in nickname", false);
+		msgBox("Don't use spaces in nicknames");
+		disableControls(false);
+		return;
+	}
+	if(nickname->text().isEmpty()){
+		msgBox("Enter nickname");
+		disableControls(false);
 		return;
 	}
 	bool isFabric = QVariant(config->getVal("isFabric")).toBool();
@@ -650,9 +774,12 @@ void MWin::progressFinish(){
 			purl();
 			break;
 		case PState::MANCHEKSUM:
-			changeProgressState(0, "Checking manifest checksum...", false);
-			qDebug() << "Checking manifest checksum...";
-			httpReq(QUrl("https://vilafox.xyz/api/yokaiLauncher?get=sha"));
+			if(offline) manlistimport();
+			else{
+				changeProgressState(0, "Checking manifest checksum...", false);
+				qDebug() << "Checking manifest checksum...";
+				httpReq(QUrl("https://vilafox.xyz/api/yokaiLauncher?get=sha"));
+			}
 			break;
 		case PState::VERMANDOWN:
 			vermandown();
@@ -721,6 +848,7 @@ void MWin::purl(){
 		progressFinish();
 	}
 
+
 }
 
 void MWin::on_playBtn_clicked(){
@@ -741,12 +869,12 @@ void MWin::on_playBtn_clicked(){
 
 void MWin::appshow(){
 	dp("UI loaded");
-#ifdef Q_OS_WIN
-	dp("Win show taskbar icon");
-	QWinTaskbarButton *button = new QWinTaskbarButton(this);
-    button->setWindow(windowHandle());
-    button->setOverlayIcon(QIcon(":/assets/icon.svg"));
-#endif
+// #ifdef Q_OS_WIN
+// 	dp("Win show taskbar icon");
+// 	QWinTaskbarButton *button = new QWinTaskbarButton(this);
+//     button->setWindow(windowHandle());
+//     button->setOverlayIcon(QIcon(":/assets/icon.svg"));
+// #endif
 
 	if(debug){
 		dcon = loadUiFile("dcon", ui_mw);
@@ -762,6 +890,7 @@ void MWin::appshow(){
 
 void MWin::loadconf()
 {
+	
 	QString cpath = getfilepath("yokai.yml");
 	QDir d;
 	config = new CMan();
@@ -771,19 +900,22 @@ void MWin::loadconf()
 	bool ifc = QVariant(config->getVal("isFabric")).toBool();
 	try{
 		debug = QVariant(config->getVal("_debug")).toBool();
-		dp("=== DEBUG MODE ENABLED ===");
-		bid->setText(bid->text() + " | DEBUG MODE");
+		
 	}catch(const std::exception& e){
 		debug = false;
 	}
-	debug = true;
-
+	
+	if(debug){
+		dp("=== DEBUG MODE ENABLED ===");
+		bid->setText(bid->text() + " | DEBUG MODE");
+	}
 	if(ism){
 		ui_mw->showMaximized();
 	}else{
 		ui_mw->show();
 		ui_mw->resize(config->getVal("width").toInt(), config->getVal("height").toInt());
 	}
+
 	nickname->setText(config->getVal("nickname"));
 	Qt::CheckState cs = ifc ? Qt::Checked : Qt::Unchecked;
 	fabricb->setCheckState(cs);

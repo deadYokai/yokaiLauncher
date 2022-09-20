@@ -43,6 +43,54 @@
 	height: 28px;
 }
 
+QSlider::groove:horizontal {
+    border: 1px solid #3A3939;
+    height: 8px; 
+	background: QLinearGradient( x1: 0, y1: 0, x2: 1, y2: 0,
+	      stop: 0.3 #fff, stop: 0.7 yellow, stop: 1 red);
+    margin: 2px 0;
+    border-radius: 4px;
+}
+
+QSlider::handle:horizontal {
+    background: #fff;
+    border: 1px solid #fff;
+    width: 7px;
+    height: 14px;
+    margin: -4px 0;
+    border-radius: 0;
+}
+	
+
+QCheckBox{
+	font-size: 18px;
+	border-bottom: 2px solid transparent;
+	padding: 2px;
+}
+
+QCheckBox:hover{
+	border-color: #eee;
+}
+
+
+QCheckBox:checked{
+	border-color: #fff
+}
+
+QCheckBox::indicator{
+	color: #b1b1b1;
+	background-color: transparent;
+	border: 1px solid #fff;
+	width: 9px;
+	height: 9px;
+}
+
+QCheckBox::indicator:checked{
+	background-color: #fff;
+	color: #fff
+}
+
+
 #versionList:hover{
 	color: #333;
 	background: #fff;
@@ -83,7 +131,28 @@
     left: 1px;
 }
 
-QLineEdit{
+QDialog{
+	background: #333;
+}
+
+#qq{
+	font-size: 18px;
+	background: rgba(3,3,3,.5);
+	padding: 16px;
+}
+
+#qq QPushButton{
+	font-size: 18px;
+	border-color: lime;
+	color: lime;
+}
+
+#qq QPushButton:hover{
+	background-color: lime;
+	color: #000;
+}
+
+QLineEdit, #jvmaddargs{
 	padding: 12px;
 	width: 100%;
 	border-radius: 0px;
@@ -94,12 +163,12 @@ QLineEdit{
 	color: #fff;
 }
 
-QLineEdit:focus{
+QLineEdit:focus, #jvmaddargs{
 	border-color: #fff;
 	background: rgba(255,255,255,.2);
 }
 
-QLineEdit::placeholder{
+QLineEdit::placeholder, #jvmaddargs{
 	color: #eee;
 }
 
@@ -124,7 +193,7 @@ QPushButton:hover{
 
 QLabel{
 	color: #fff;
-	font-size: 42px;
+	font-size: 24px;
 	width: 100%;
 }
 

@@ -5,6 +5,7 @@ yokaiLauncher:
   lastver: "1.19.2"
   maximized: false
   ram: 2048
+  isFullscreen: false
   jvmargs: ""
   nickname: ""
   isFabric: false

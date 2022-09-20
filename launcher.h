@@ -27,6 +27,8 @@
 #include <QCheckBox>
 #include <QPlainTextEdit> 
 #include <QSettings> 
+#include <QResizeEvent> 
+#include <QSlider>
 #include <config_manager.h>
 
 QT_BEGIN_NAMESPACE
@@ -35,7 +37,6 @@ class CMan;
 class QNetworkReply;
 QT_END_NAMESPACE
 
-using namespace std;
 
 enum class PState {
     INIT,
@@ -98,6 +99,8 @@ public:
     void fabricDownload();
     bool debug;
     QString javaRuntimeDir;
+    void msgBox(QString msg);
+    bool offline = false;
 
 private slots:
     void on_playBtn_clicked();
@@ -106,15 +109,18 @@ private slots:
     void isFabricbox(int state);
     void rr();
     void re();
+    void settbtn_click();
 
 private:
     QWidget *ui_mw;
     QWidget *dcon;
+    QWidget *bwi;
+    QWidget *uwi;
     QPushButton *playBtn;
     QPushButton *settingsb;
     QCheckBox *fabricb;
     QWidget *mwCW;
-    QMainWindow *mm;
+    QWidget *mm;
     QLineEdit *nickname;
     QLabel *cNick;
     QLabel *pLabel;
@@ -127,4 +133,7 @@ private:
     std::unique_ptr<QFile> file;
     QProcess *process;
     bool run = false;
+
+    QWidget *settingsWidget;
+    QPushButton *settsavebtn;
 };
