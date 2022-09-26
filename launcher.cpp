@@ -4,7 +4,6 @@
 #include <limits>
 #ifdef Q_OS_WIN
 #include <windows.h>
-#include <QWinTaskbarButton>
 #endif
 
 
@@ -638,7 +637,7 @@ void MWin::manlistimport(){
 
 bool MWin::isWhiteSpace(const QString & str)
 {
-	return (QRegExp("\\s.").indexIn(str) != -1) ? true : false;
+	return QRegularExpression("\\s.").match(str).hasMatch();
 }
 
 
@@ -869,12 +868,6 @@ void MWin::on_playBtn_clicked(){
 
 void MWin::appshow(){
 	dp("UI loaded");
-// #ifdef Q_OS_WIN
-// 	dp("Win show taskbar icon");
-// 	QWinTaskbarButton *button = new QWinTaskbarButton(this);
-//     button->setWindow(windowHandle());
-//     button->setOverlayIcon(QIcon(":/assets/icon.svg"));
-// #endif
 
 	if(debug){
 		dcon = loadUiFile("dcon", ui_mw);

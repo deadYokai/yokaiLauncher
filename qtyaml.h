@@ -104,7 +104,7 @@ struct convert<QVector<T> >
         return true;
     }
 };
-
+/*
 // QList
 template<typename T>
 struct convert<QList<T> >
@@ -132,8 +132,8 @@ struct convert<QList<T> >
         }
         return true;
     }
-};
-
+};*/
+/*
 // QPair
 template<typename T, typename U>
 struct convert<QPair<T,U> >
@@ -157,7 +157,7 @@ struct convert<QPair<T,U> >
         rhs.second = node[1].as<U>();
         return true;
     }
-};
+};*/
 
 // QStringList
 template<>

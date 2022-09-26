@@ -1,6 +1,6 @@
 # yokaiLauncher
 
-Launcher is developing on C/C++ using Qt5;
+Launcher is developing on C/C++ using Qt6;
 
 ### Screenshot:
 ![Menu](https://s1.vilafox.xyz/resources/ghs.png)
@@ -11,8 +11,7 @@ Depency: qtbase, qttools, qtsvg, qtnetwork, yaml-cpp
 
 ```bash
 mkdir build && cd build
-qmake ..
-make
+cmake .. && make
 ```
 
 Linux: `build/yokaiLauncher`
