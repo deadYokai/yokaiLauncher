@@ -195,6 +195,55 @@ QPushButton{
 	color: #fff;
 }
 
+QFileDialog{
+	background: #000;
+	color: #fff;
+}
+
+QFileDialog QPushButton{
+	font-size: 18px;
+	padding: 2px;
+	height: 32px;
+}
+
+QFileDialog QLineEdit{
+	padding: 2px;
+	height: 32px;
+	font-size: 18px
+}
+
+QFileDialog QLabel{
+	font-size: 18px;
+}
+
+QFileDialog QComboBox{
+	padding: 2px;
+	font-size: 18px;
+	height: 32px;
+}
+
+QFileDialog QListView, QFileDialog QTreeView{
+	background: #000;
+	color: #fff;
+}
+
+QFileDialog QListView::item:selected, QFileDialog QTreeView::item:selected{
+	background: #fff;
+	color: #000;
+}
+
+QFileDialog QListView::item:hover, QFileDialog QTreeView::item:hover{
+	background: rgba(255, 255, 255, .8);
+	color: #000;
+}
+
+QFileDialog QTreeView QHeaderView{
+	background: #000;
+	color: #fff;
+	border: none;
+	border-bottom: 2px solid #fff;
+}
+
 #mcFolderBtn{
 	font-size: 18px;
 }

@@ -32,6 +32,9 @@
 #include <config_manager.h>
 #include <QAbstractItemView>
 #include <QCloseEvent>
+#include <QDesktopServices>
+#include <QFileDialog>
+
 QT_BEGIN_NAMESPACE
 class QFile;
 class CMan;

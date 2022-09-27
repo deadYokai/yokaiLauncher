@@ -161,6 +161,19 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 	connect(vList, &QComboBox::currentTextChanged, this, &MWin::verChanged);
 	connect(fabricb, &QCheckBox::stateChanged, this, &MWin::isFabricbox);
 	connect(settingsb, &QPushButton::clicked, this, &MWin::settbtn_click);
+	connect(mcFolBtn, &QPushButton::clicked, this, [=](){ QDesktopServices::openUrl(QUrl("file:///"+config->getVal("mcdir"), QUrl::TolerantMode)); });
+	connect(mcPathSel, &QPushButton::clicked, this, [=](){ 
+		QFileDialog *dir = new QFileDialog(this);
+		dir->setFileMode(QFileDialog::Directory);
+		dir->setOption(QFileDialog::ShowDirsOnly);
+		dir->setViewMode(QFileDialog::List);
+		dir->setDirectory(Path.mcPath);
+		if(dir->exec()){
+			if(!dir->selectedFiles()[0].isEmpty()){
+				mcPathEdit->setText(dir->selectedFiles()[0]);
+			}
+		}
+	 });
 	connect(settsavebtn, &QPushButton::clicked, this, [=](){
 		QCheckBox *isf = settingsWidget->findChild<QCheckBox*>("isMcFullscreen");
 		QLineEdit *jvma = settingsWidget->findChild<QLineEdit*>("jvmaddargs");
@@ -174,6 +187,13 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 		}else{
 			config->setVal("theme", "");
 			setStyleSheet("");
+		}
+		QDir q;
+		if(q.mkpath(mcPathEdit->text())){
+			config->setVal("mcdir", mcPathEdit->text());
+			Path.mcPath = mcPathEdit->text();
+		}else{
+			msgBox("Wrong Minecraft Path. Not Saved");
 		}
 		config->setVal("ram", rams->value());
 		config->setVal("isFullscreen", ((isf->checkState() == Qt::Checked) ? 1 : 0));
@@ -928,6 +948,7 @@ void MWin::loadconf()
 	config = new CMan();
 	config->load(cpath);
 	Path.mcPath = config->getVal("mcdir");
+	mcPathEdit->setText(Path.mcPath);
 	bool ism = QVariant(config->getVal("maximized")).toBool();
 	bool ifc = QVariant(config->getVal("isFabric")).toBool();
 	try{
