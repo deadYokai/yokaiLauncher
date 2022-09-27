@@ -6,10 +6,8 @@
 #include <windows.h>
 #endif
 
-
-void dp(std::string a){
-	std::cout << a << std::endl;
-}
+// Custom debug outputs (idk why i'm need this)
+void dp(std::string a){	std::cout << a << std::endl;}
 void dp(char a){std::cout << a << std::endl;}
 void dp(int a){std::cout << a << std::endl;}
 void dp(double a){std::cout << a << std::endl;}
@@ -20,15 +18,12 @@ static QWidget *loadUiFile(QString page, QWidget *parent = nullptr)
 	file.open(QIODevice::ReadOnly);
 
 	QUiLoader loader;
-	QWidget *k;
-	if(parent == nullptr) k = loader.load(&file);
-	else k = loader.load(&file, parent);
-	file.close();
-	return k;
+	if(parent == nullptr) return loader.load(&file);
+	else return loader.load(&file, parent);
 }
 
-QString importQss(){
-	QFile file(":/assets/style.qss");
+QString importStyle(QString stylePath){
+	QFile file(stylePath);
 	file.open(QFile::ReadOnly | QFile::Text);
 	QString styleSheet = QLatin1String(file.readAll());
 	file.close();
@@ -60,6 +55,7 @@ void MWin::isFabricbox(int state){
 		config->setVal("isFabric", false);
 }
 
+// Find RAM
 uint64_t getSystemRam()
 {
 #ifdef Q_OS_WIN
@@ -90,6 +86,7 @@ uint64_t getSystemRam()
 #endif
 }
 
+// Settings Button event
 void MWin::settbtn_click(){
 
 	QCheckBox *isf = settingsWidget->findChild<QCheckBox*>("isMcFullscreen");
@@ -120,8 +117,13 @@ void MWin::settbtn_click(){
 	uwi->show();
 }
 
+// UI & Events Init
 MWin::MWin(QWidget *parent) : QMainWindow(parent)
 {
+
+	this->setWindowFlags(Qt::Window);
+	this->setWindowModality(Qt::ApplicationModal);
+
 	ui_mw = loadUiFile("client", this);
 	mm = findChild<QWidget*>("ClientForm");
 	mwCW = findChild<QWidget*>("Logo");
@@ -140,16 +142,20 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 	uwi->setLayout(l);
 	settingsWidget = loadUiFile("settw", uwi);
 	l->addWidget(settingsWidget);
-	uwi->hide();
+	uwi->close();
 	
+	themeBox = settingsWidget->findChild<QComboBox*>("themesBox");
+	mcPathEdit = settingsWidget->findChild<QLineEdit*>("mcPathEdit");
+	mcPathSel = settingsWidget->findChild<QPushButton*>("mcPathSelect");
+	mcFolBtn = settingsWidget->findChild<QPushButton*>("mcFolderBtn");
+
 	bid = new QLabel(ui_mw);
 	bid->setStyleSheet("font-size: 14px");
 	bid->setGeometry(8, 8, 1000, 32);
 	settsavebtn = settingsWidget->findChild<QPushButton*>("settsaveb");
 	bid->setText("Build #" + QString::number(BUILDID));
 
-	setWindowFlags(Qt::Window);
-	ui_mw->setWindowFlags(Qt::Window);
+	ui_mw->setWindowFlags(Qt::Widget);
 	
 	QMetaObject::connectSlotsByName( this );
 	connect(vList, &QComboBox::currentTextChanged, this, &MWin::verChanged);
@@ -159,27 +165,42 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 		QCheckBox *isf = settingsWidget->findChild<QCheckBox*>("isMcFullscreen");
 		QLineEdit *jvma = settingsWidget->findChild<QLineEdit*>("jvmaddargs");
 		QSlider *rams = settingsWidget->findChild<QSlider*>("ramslider");
+		if(themeBox->currentIndex() > 0){
+			qDebug() << themeBox->currentIndex();
+			config->setVal("theme", themeBox->currentText());
+			QDir *tpath = new QDir(getfilepath("themes"));
+			QString themepath = tpath->path() + "/" + config->getVal("theme")+"/"+config->getVal("theme")+".theme.css";
+			setStyleSheet(importStyle(themepath));
+		}else{
+			config->setVal("theme", "");
+			setStyleSheet("");
+		}
 		config->setVal("ram", rams->value());
 		config->setVal("isFullscreen", ((isf->checkState() == Qt::Checked) ? 1 : 0));
-		qDebug() << (isf->checkState() == Qt::Checked);
 		config->setVal("jvmargs", jvma->text());
 		pWidget->show();
 		mwCW->show();
 		bwi->show();
-		uwi->hide();
+		uwi->close();
 	});
+}
+
+void MWin::closeEvent (QCloseEvent *event)
+{
+    qDebug() << "Bye...";
 }
 
 MWin::~MWin(){
 	if(run) process->kill();
-	if(!mm->isMaximized()){
-		config->setVal("height", mm->height());
-		config->setVal("width", mm->width());
+	if(!isMaximized()){
+		config->setVal("height", height());
+		config->setVal("width", width());
 	}
-	config->setVal("maximized", mm->isMaximized());
+	config->setVal("maximized", isMaximized());
 	dp("===============================\n");
 }
 
+// Custom MessageBox
 void MWin::msgBox(QString msg){
 	QDialog *box = new QDialog(ui_mw);
 	box->setWindowModality(Qt::WindowModal);
@@ -234,6 +255,7 @@ void MWin::changeProgressState(bool show){
 	pWidget->setMaximumHeight(mH);
 }
 
+// Generate Java arguments
 QStringList MWin::getJargs(){
 	QString args = config->getVal("jvmargs");
 	args.append("-Dminecraft.launcher.brand=yokai");
@@ -306,6 +328,7 @@ QStringList MWin::getJargs(){
 	return args.split(" ");
 }
 
+// Check Fabric and Download
 void MWin::fabricDownload(){
 	QString fabricMaven = "https://maven.fabricmc.net/";
 	QString fabricMcMavenDir = "net/fabricmc/";
@@ -378,6 +401,7 @@ void MWin::fabricDownload(){
 	checkJava();
 }
 
+// Check Java and Downloads
 void MWin::checkJava(){
 	javaRuntimeDir = QString::fromLocal8Bit(qgetenv("JAVA_HOME"));
 	qDebug() << "Java init";
@@ -439,6 +463,7 @@ void MWin::checkJava(){
 	launch();
 }
 
+// After Minecraft close
 void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
 	disableControls(false);
 	changeProgressState(0, "Game exit", false);
@@ -451,11 +476,12 @@ void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
 	run = false;
 	bool ism = QVariant(config->getVal("maximized")).toBool();
 	if(ism)
-		ui_mw->setWindowState(Qt::WindowMaximized);
+		setWindowState(Qt::WindowMaximized);
 	else
-		ui_mw->setWindowState(ui_mw->windowState() & ~Qt::WindowMinimized);
+		setWindowState(windowState() & ~Qt::WindowMinimized);
 }
 
+// Write Minecraft output error to DebugLog
 void MWin::re(){
 	QProcess *p = qobject_cast<QProcess*>(sender());
 	p->setReadChannel(QProcess::StandardError);
@@ -466,6 +492,8 @@ void MWin::re(){
 	}
 
 }
+
+// Write Minecraft output to DebugLog
 void MWin::rr(){
 	QProcess *p = qobject_cast<QProcess*>(sender());
 	p->setReadChannel(QProcess::StandardOutput);
@@ -478,6 +506,7 @@ void MWin::rr(){
 
 }
 
+// Launch Minecraft
 void MWin::launch(){
 
 	QString jvm = javaRuntimeDir + "/bin/java";
@@ -499,7 +528,7 @@ void MWin::launch(){
 		connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(rr()));
 		connect(process, SIGNAL(readyReadStandardError()), this, SLOT(re()));
 	}else
-		ui_mw->setWindowState(Qt::WindowMinimized);
+		setWindowState(Qt::WindowMinimized);
 	changeProgressState(0, "Launching...", false);
 	disableControls();
 	process->start(QDir::cleanPath(jvm), args);
@@ -525,6 +554,7 @@ void MWin::getCheckSum(){
 		manlistimport();
 }
 
+// After http request
 void MWin::httpFinish(){
 	QFileInfo fi;
 	if(progstate != PState::MANCHEKSUM){
@@ -598,7 +628,7 @@ void MWin::progress_func(qint64 bytesRead, qint64 totalBytes)
 	}
 }
 
-
+// Load main manifest
 void MWin::manlistimport(){
 	progstate = PState::INIT;
 	QFile f(getfilepath("yokaiLauncher_manifest.json"));
@@ -640,7 +670,7 @@ bool MWin::isWhiteSpace(const QString & str)
 	return QRegularExpression("\\s.").match(str).hasMatch();
 }
 
-
+// Download assets for Minecrafts
 void MWin::assdown(){
 	QJsonObject ja = assmanj["objects"].toObject();
 	assm = ja.size();
@@ -682,6 +712,7 @@ void MWin::assdown(){
 	else checkJava();
 }
 
+// Download Java libraries
 void MWin::libdown(){
 
 	QJsonArray ja = currmanj["libraries"].toArray();
@@ -734,6 +765,7 @@ void MWin::libdown(){
 	assdown();
 }
 
+// Check minecraft version and download
 void MWin::vermandown(){
 
 	QFile f(getfilepath(currManFile));
@@ -766,6 +798,7 @@ void MWin::vermandown(){
 
 }
 
+// What i'm do after http request
 void MWin::progressFinish(){
 	currFile = nullptr;
 	switch(progstate){
@@ -804,6 +837,7 @@ void MWin::progressFinish(){
 	}
 }
 
+// Connect http request events
 void MWin::httpReq(const QUrl &requestedUrl) {
 	reply = qnam.get(QNetworkRequest(requestedUrl));
 	if(progstate != PState::MANCHEKSUM){
@@ -815,6 +849,7 @@ void MWin::httpReq(const QUrl &requestedUrl) {
 	}
 }
 
+// Download init
 void MWin::downloadFile(const QUrl &requestedUrl, QString path){
 	
 	path = getfilepath(path);
@@ -833,6 +868,7 @@ void MWin::downloadFile(const QUrl &requestedUrl, QString path){
 	httpReq(requestedUrl);
 }
 
+// Check manifest file
 void MWin::purl(){
 	changeProgressState(0, "Getting version manifest...", false);
 	QString manpath = "yokaiLauncher_manifest.json";
@@ -850,6 +886,7 @@ void MWin::purl(){
 
 }
 
+// Play button event
 void MWin::on_playBtn_clicked(){
 	disableControls();
 	config->setVal("nickname", nickname->text());
@@ -866,6 +903,7 @@ void MWin::on_playBtn_clicked(){
 	}
 }
 
+// UI Checks
 void MWin::appshow(){
 	dp("UI loaded");
 
@@ -881,6 +919,7 @@ void MWin::appshow(){
 	
 }
 
+// Config loader & Init app
 void MWin::loadconf()
 {
 	
@@ -902,11 +941,37 @@ void MWin::loadconf()
 		dp("=== DEBUG MODE ENABLED ===");
 		bid->setText(bid->text() + " | DEBUG MODE");
 	}
+
 	if(ism){
-		ui_mw->showMaximized();
+		showMaximized();
 	}else{
-		ui_mw->show();
-		ui_mw->resize(config->getVal("width").toInt(), config->getVal("height").toInt());
+		show();
+		resize(config->getVal("width").toInt(), config->getVal("height").toInt());
+	}
+	
+	d.mkpath(getfilepath("themes/"));
+	
+	QDir *tpath = new QDir(getfilepath("themes"));
+	QList<QString> fl = tpath->entryList(QDir::Dirs, QDir::Name);
+	themeBox->insertItem(0, "Default");
+	themeBox->setCurrentText("Default");
+	themeBox->setItemData(0, "Default");
+	for(QList<QString>::iterator it = fl.begin(); it != fl.end(); ++it){
+		QString fname = *it;
+		if(fname != "." || fname != ".."){
+			QString p = tpath->path() + "/" + fname +"/"+fname+".theme.css";
+			if(QFile::exists(p)){
+				qDebug() << "Theme found: " + fname;
+				themeBox->addItem(fname);
+			}
+		}
+	}
+
+	if(!config->getVal("theme").isEmpty() && !isWhiteSpace(config->getVal("theme"))){
+		qDebug() << "Set theme:" << config->getVal("theme");
+		QString themepath = tpath->path() + "/" + config->getVal("theme")+"/"+config->getVal("theme")+".theme.css";
+		setStyleSheet(importStyle(themepath));
+		themeBox->setCurrentText(config->getVal("theme"));
 	}
 
 	nickname->setText(config->getVal("nickname"));
@@ -921,7 +986,7 @@ int main(int argc, char *argv[])
 	dp("Init");
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 	QApplication app(argc, argv);
-	app.setStyleSheet(importQss());
+	app.setStyleSheet(importStyle(":/assets/default.qss"));
 	app.setDesktopFileName("xyz.vilafox.mc.yokaiLauncher");
 	app.setWindowIcon(QIcon(":/assets/icon.svg"));
 	importFonts();

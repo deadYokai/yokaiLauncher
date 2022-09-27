@@ -50,7 +50,7 @@ set(res_resource_files
     "assets/e-UkraineHead-LOGO.otf"
     "assets/icon.svg"
     "assets/settw.ui"
-    "assets/style.qss"
+    "assets/default.qss"
 )
 
 qt_add_resources(yokaiLauncher "res"

@@ -24,7 +24,23 @@ void CMan::load(QString pathtofile){
 }
 
 QString CMan::getVal(QString valname){
-    return config["yokaiLauncher"][valname.toUtf8().constData()].as<QString>();
+    QString out;
+    if(valname == "_debug"){
+        return config["yokaiLauncher"][valname.toUtf8().constData()].as<QString>();
+    }else{
+        try{
+            out = config["yokaiLauncher"][valname.toUtf8().constData()].as<QString>();
+        }catch(const std::exception& e){
+            QFile cfil(":/assets/defconf.yml");
+            cfil.open(QFile::ReadOnly | QFile::Text);
+            cfil.copy(".tmpdef.yml");
+            YAML::Node n = YAML::LoadFile(".tmpdef.yml");
+            out = n["yokaiLauncher"][valname.toUtf8().constData()].as<QString>();
+            cfil.close();
+            QFile::remove(".tmpdef.yml");
+        }
+        return out;
+    }
 }
 
 void CMan::saveConf(){

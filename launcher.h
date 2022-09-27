@@ -30,7 +30,8 @@
 #include <QResizeEvent> 
 #include <QSlider>
 #include <config_manager.h>
-
+#include <QAbstractItemView>
+#include <QCloseEvent>
 QT_BEGIN_NAMESPACE
 class QFile;
 class CMan;
@@ -101,6 +102,7 @@ public:
     QString javaRuntimeDir;
     void msgBox(QString msg);
     bool offline = false;
+    QWidget *ui_mw;
 
 private slots:
     void on_playBtn_clicked();
@@ -112,7 +114,7 @@ private slots:
     void settbtn_click();
 
 private:
-    QWidget *ui_mw;
+    void closeEvent(QCloseEvent *bar);
     QWidget *dcon;
     QWidget *bwi;
     QWidget *uwi;
@@ -136,4 +138,8 @@ private:
 
     QWidget *settingsWidget;
     QPushButton *settsavebtn;
+    QComboBox *themeBox;
+    QPushButton *mcFolBtn;
+    QLineEdit *mcPathEdit;
+    QPushButton *mcPathSel;
 };

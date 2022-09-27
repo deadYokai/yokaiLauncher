@@ -9,4 +9,5 @@ yokaiLauncher:
   jvmargs: ""
   nickname: ""
   isFabric: false
+  theme: ""
   
