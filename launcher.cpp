@@ -22,11 +22,30 @@ static QWidget *loadUiFile(QString page, QWidget *parent = nullptr)
 	else return loader.load(&file, parent);
 }
 
-QString importStyle(QString stylePath){
+QString MWin::importStyle(QString stylePath){
 	QFile file(stylePath);
 	file.open(QFile::ReadOnly | QFile::Text);
-	QString styleSheet = QLatin1String(file.readAll());
+	QTextStream in(&file);
+	QFileInfo fi(file.fileName());
+	QString styleSheet = in.readAll().replace("path:", fi.path() + "/");
 	file.close();
+	QRegularExpression *re = new QRegularExpression("background-covered:(.*?);");
+	QRegularExpressionMatch r = re->match(styleSheet);
+	if(r.hasMatch()){
+		QRegularExpressionMatch bpathm = QRegularExpression("\"(.*?)\"").match(r.captured(1));
+		if(bpathm.hasMatch()){
+			QString bpath = bpathm.captured(1);
+			if(QFile::exists(bpath))
+				_pixmapBg.load(bpath);
+			else{
+				qDebug() << "Warn: Background image not found on "+bpath+", setting to default";
+				_pixmapBg.load(":/assets/bg_1.png");
+			}
+		}else{
+			qDebug() << "Warn: Invalid background image, setting to default";
+			_pixmapBg.load(":/assets/bg_1.png");
+		}
+	}
 	return styleSheet;
 }
 
@@ -86,6 +105,7 @@ uint64_t getSystemRam()
 #endif
 }
 
+
 // Settings Button event
 void MWin::settbtn_click(){
 
@@ -116,6 +136,16 @@ void MWin::settbtn_click(){
 	bwi->hide();
 	uwi->show();
 }
+
+void MWin::disableControls(bool a = true){
+	bool val = !a;
+	nickname->setEnabled(val);
+	vList->setEnabled(val);
+	playBtn->setEnabled(val);
+	fabricb->setEnabled(val);
+	settingsb->setEnabled(val);
+}
+
 
 // UI & Events Init
 MWin::MWin(QWidget *parent) : QMainWindow(parent)
@@ -157,11 +187,26 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 
 	ui_mw->setWindowFlags(Qt::Widget);
 	
-	QMetaObject::connectSlotsByName( this );
 	connect(vList, &QComboBox::currentTextChanged, this, &MWin::verChanged);
 	connect(fabricb, &QCheckBox::stateChanged, this, &MWin::isFabricbox);
 	connect(settingsb, &QPushButton::clicked, this, &MWin::settbtn_click);
+
 	connect(mcFolBtn, &QPushButton::clicked, this, [=](){ QDesktopServices::openUrl(QUrl("file:///"+config->getVal("mcdir"), QUrl::TolerantMode)); });
+	connect(playBtn, &QPushButton::clicked, this, [=](){
+		disableControls();
+		config->setVal("nickname", nickname->text());
+		QString dpath = Path.verPath + vList->currentText();
+		QString manifestUri = vData.value(vList->currentText());
+		QDir d;
+		if(d.mkpath(getfilepath(dpath))){
+			progstate = PState::VERMANDOWN;
+			currManFile = dpath + "/" + vList->currentText() + ".json";
+			if(!QFile::exists(getfilepath(dpath + "/" + vList->currentText() + ".json")))
+				downloadFile(QUrl(manifestUri), dpath + "/" + vList->currentText() + ".json");
+			else
+				vermandown();
+		}
+	 });
 	connect(mcPathSel, &QPushButton::clicked, this, [=](){ 
 		QFileDialog *dir = new QFileDialog(this);
 		dir->setFileMode(QFileDialog::Directory);
@@ -203,7 +248,33 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 		bwi->show();
 		uwi->close();
 	});
+
 }
+
+
+void MWin::paintEvent(QPaintEvent *pe)
+{
+	QPainter painter(this);
+
+	auto winSize = ui_mw->size();
+	auto pixmapRatio = (float)_pixmapBg.width() / _pixmapBg.height();
+	auto windowRatio = (float)winSize.width() / winSize.height();
+
+	if(pixmapRatio > windowRatio)
+	{
+		auto newWidth = (int)(winSize.height() * pixmapRatio);
+		auto offset = (newWidth - winSize.width()) / -2;
+		painter.drawPixmap(offset, 0, newWidth, winSize.height(), _pixmapBg);
+	}
+	else
+	{
+		auto newHeight = (int)(winSize.width() / pixmapRatio);
+		painter.drawPixmap(0, 0, winSize.width(), newHeight, _pixmapBg);
+	}
+
+
+}
+
 
 void MWin::closeEvent (QCloseEvent *event)
 {
@@ -239,16 +310,6 @@ void MWin::msgBox(QString msg){
 	connect(btn, &QPushButton::clicked, this, [=]() { 
 		box->close();
 	});
-}
-
-
-void MWin::disableControls(bool a = true){
-	bool val = !a;
-	nickname->setEnabled(val);
-	vList->setEnabled(val);
-	playBtn->setEnabled(val);
-	fabricb->setEnabled(val);
-	settingsb->setEnabled(val);
 }
 
 void MWin::changeProgressState(int progress, QString text, bool showBar = true, bool show = true){
@@ -306,7 +367,6 @@ QStringList MWin::getJargs(){
 #endif
 			if(jo["downloads"].toObject()["classifiers"].toObject().contains("natives-"+p)){
 				libs.append(libPath + paths);
-				QString u = jo["downloads"].toObject()["classifiers"].toObject()["natives-"+p].toObject()["url"].toString();
 				QString pp = Path.libsPath + jo["downloads"].toObject()["classifiers"].toObject()["natives-"+p].toObject()["path"].toString();
 				libs.append(getfilepath(pp) + paths);
 			}
@@ -644,7 +704,7 @@ void MWin::progress_func(qint64 bytesRead, qint64 totalBytes)
 			changeProgressState((int)bytesRead, (int)totalBytes, s + fi.fileName());
 		}
 		else
-			changeProgressState((int)bytesRead, (int)totalBytes, QString::fromStdString((int)bytesRead+"/"+(int)totalBytes));
+			changeProgressState((int)bytesRead, (int)totalBytes, QString::number((int)bytesRead)+"/"+QString::number((int)totalBytes));
 	}
 }
 
@@ -906,22 +966,6 @@ void MWin::purl(){
 
 }
 
-// Play button event
-void MWin::on_playBtn_clicked(){
-	disableControls();
-	config->setVal("nickname", nickname->text());
-	QString dpath = Path.verPath + vList->currentText();
-	QString manifestUri = vData.value(vList->currentText());
-	QDir d;
-	if(d.mkpath(getfilepath(dpath))){
-		progstate = PState::VERMANDOWN;
-		currManFile = dpath + "/" + vList->currentText() + ".json";
-		if(!QFile::exists(getfilepath(dpath + "/" + vList->currentText() + ".json")))
-			downloadFile(QUrl(manifestUri), dpath + "/" + vList->currentText() + ".json");
-		else
-			vermandown();
-	}
-}
 
 // UI Checks
 void MWin::appshow(){
@@ -1007,11 +1051,11 @@ int main(int argc, char *argv[])
 	dp("Init");
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 	QApplication app(argc, argv);
-	app.setStyleSheet(importStyle(":/assets/default.qss"));
+	MWin n;
+	app.setStyleSheet(n.importStyle(":/assets/default.qss"));
 	app.setDesktopFileName("xyz.vilafox.mc.yokaiLauncher");
 	app.setWindowIcon(QIcon(":/assets/icon.svg"));
 	importFonts();
-	MWin n;
 	app.setActiveWindow(&n);
 	n.progstate = PState::INIT;
 	n.loadconf();

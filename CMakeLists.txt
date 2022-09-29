@@ -1,24 +1,18 @@
 cmake_minimum_required(VERSION 3.16)
-project(yokaiLauncher VERSION 1.0 LANGUAGES CXX)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+project(yokaiLauncher VERSION 0.1.1 LANGUAGES CXX)
 
-set(CMAKE_AUTOMOC ON)
-include(GNUInstallDirs)
-set(CMAKE_AUTOUIC ON)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg UiTools Widgets)
+find_package(yaml-cpp REQUIRED)
 
-find_package(QT NAMES Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Gui Network Svg UiTools Widgets)
-find_package(WrapIconv)
-find_package(WrapZSTD 1.3)
+qt_standard_project_setup()
 
-qt_add_executable(yokaiLauncher WIN32 MACOSX_BUNDLE
-    assets/client.ui
+set(CMAKE_AUTORCC ON)
+
+qt_add_executable(yokaiLauncher
+    res.qrc
     config_manager.cpp
-    launcher.cpp launcher.h
-)
-target_include_directories(yokaiLauncher PRIVATE
-    .
+    launcher.cpp
 )
 
 string(TIMESTAMP NOW "+%y%m%d%H%M%S")
@@ -28,54 +22,19 @@ target_compile_definitions(yokaiLauncher PRIVATE
 )
 
 target_link_libraries(yokaiLauncher PRIVATE
-    Qt::Core
-    Qt::Gui
-    Qt::Network
-    Qt::Svg
-    Qt::UiTools
-    Qt::Widgets
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Network
+    Qt6::Svg
+    Qt6::UiTools
+    Qt6::Widgets
     yaml-cpp
 )
 
-
-# Resources:
-set(res_resource_files
-    "assets/bg_1.png"
-    "assets/client.ui"
-    "assets/dcon.ui"
-    "assets/defconf.yml"
-    "assets/e-Ukraine-Bold.otf"
-    "assets/e-Ukraine-Light.otf"
-    "assets/e-Ukraine-Thin.otf"
-    "assets/e-UkraineHead-LOGO.otf"
-    "assets/icon.svg"
-    "assets/settw.ui"
-    "assets/default.qss"
+set_target_properties(yokaiLauncher PROPERTIES
+    WIN32_EXECUTABLE ON
+    MACOSX_BUNDLE OFF
 )
 
-qt_add_resources(yokaiLauncher "res"
-    PREFIX
-        "/"
-    FILES
-        ${res_resource_files}
-)
-
-if(WIN32)
-    target_link_libraries(yokaiLauncher PRIVATE
-        WrapIconv::WrapIconv
-        WrapZSTD::WrapZSTD
-        advapi32
-        charset
-        crypt32
-        pthread
-        wldap32
-        ws2_32
-        z
-    )
-endif()
-
-install(TARGETS yokaiLauncher
-    BUNDLE DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+target_include_directories(yokaiLauncher PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

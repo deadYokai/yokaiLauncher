@@ -34,6 +34,7 @@
 #include <QCloseEvent>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QPainter>
 
 QT_BEGIN_NAMESPACE
 class QFile;
@@ -62,6 +63,7 @@ public:
     explicit MWin(QWidget *parent = nullptr);
     ~MWin();
     void appshow();
+    QString importStyle(QString stylePath);
     void disableControls(bool);
     void changeProgressState(int, QString, bool, bool);
     void changeProgressState(int, int, QString, bool, bool);
@@ -106,9 +108,10 @@ public:
     void msgBox(QString msg);
     bool offline = false;
     QWidget *ui_mw;
+    QPixmap _pixmapBg;
+    void paintEvent(QPaintEvent *pe);
 
 private slots:
-    void on_playBtn_clicked();
     void verChanged(const QString &text);
     void mcend(int exitCode, QProcess::ExitStatus ExitStatus);
     void isFabricbox(int state);
