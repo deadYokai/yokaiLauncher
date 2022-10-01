@@ -336,6 +336,16 @@ void MWin::changeProgressState(bool show){
 	pWidget->setMaximumHeight(mH);
 }
 
+bool MWin::checksha1(QString path, QString sha1){
+	QFile f(path);
+	if(!f.open(QFile::ReadOnly)) return false;
+	QByteArray str = f.readAll();
+	QCryptographicHash hash(QCryptographicHash::Sha1);
+	hash.addData(str);
+	QString a = hash.result().toHex();
+	return (sha1 == a);
+}
+
 // Generate Java arguments
 QStringList MWin::getJargs(){
 	QString args = config->getVal("jvmargs");
@@ -767,6 +777,11 @@ void MWin::assdown(){
 			downloadFile(aurl, apath);
 			return;
 		}
+
+		if(!checksha1(getfilepath(apath), hash)){
+			downloadFile(aurl, apath);
+			return;
+		}
 	}
 	ass = 0;
 	assm = 0;
@@ -800,6 +815,7 @@ void MWin::libdown(){
 		QJsonValue a = *it;
 		QJsonObject jo = a.toObject();
 		QString libPath = Path.libsPath + jo["downloads"].toObject()["artifact"].toObject()["path"].toString();
+		QString libSha1 = jo["downloads"].toObject()["artifact"].toObject()["sha1"].toString();
 		QUrl libUrl = QUrl(jo["downloads"].toObject()["artifact"].toObject()["url"].toString());
 		currFile = libPath;
 		
@@ -822,6 +838,7 @@ void MWin::libdown(){
 				}
 			}
 		}
+
 		if(!QFile::exists(getfilepath(libPath))){
 			if(jo.contains("rules")){
 #ifdef Q_OS_WIN
@@ -840,7 +857,12 @@ void MWin::libdown(){
 				return;
 			}
 		}
-	}\
+
+		if(!checksha1(getfilepath(libPath), libSha1)){
+			downloadFile(libUrl, libPath);
+			return;
+		}
+	}
 	progstate = PState::ASSDOWN;
 	assdown();
 }
@@ -986,7 +1008,8 @@ void MWin::appshow(){
 // Config loader & Init app
 void MWin::loadconf()
 {
-	
+	dp("\n======== yokaiLauncher ========");
+	dp("Init");
 	QString cpath = getfilepath("yokai.yml");
 	QDir d;
 	config = new CMan();
@@ -995,13 +1018,13 @@ void MWin::loadconf()
 	mcPathEdit->setText(Path.mcPath);
 	bool ism = QVariant(config->getVal("maximized")).toBool();
 	bool ifc = QVariant(config->getVal("isFabric")).toBool();
-	try{
-		debug = QVariant(config->getVal("_debug")).toBool();
-		
-	}catch(const std::exception& e){
-		debug = false;
+	if(!debug){
+		try{
+			debug = QVariant(config->getVal("_debug")).toBool();
+		}catch(const std::exception& e){
+			debug = false;
+		}
 	}
-	
 	if(debug){
 		dp("=== DEBUG MODE ENABLED ===");
 		bid->setText(bid->text() + " | DEBUG MODE");
@@ -1047,11 +1070,17 @@ void MWin::loadconf()
 
 int main(int argc, char *argv[])
 {
-	dp("\n======== yokaiLauncher ========");
-	dp("Init");
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 	QApplication app(argc, argv);
+	app.setApplicationName("yokaiLauncher");
+	app.setApplicationVersion("0.1.3"); // 0 - is beta
+	QCommandLineParser p;
+	p.addVersionOption();
+	QCommandLineOption isDebug(QStringList() << "d" << "debug");
+	p.addOption(isDebug);
+	p.process(app);
 	MWin n;
+	n.debug = p.isSet(isDebug);
 	app.setStyleSheet(n.importStyle(":/assets/default.qss"));
 	app.setDesktopFileName("xyz.vilafox.mc.yokaiLauncher");
 	app.setWindowIcon(QIcon(":/assets/icon.svg"));

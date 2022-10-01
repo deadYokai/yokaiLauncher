@@ -110,6 +110,7 @@ public:
     QWidget *ui_mw;
     QPixmap _pixmapBg;
     void paintEvent(QPaintEvent *pe);
+    bool checksha1(QString, QString);
 
 private slots:
     void verChanged(const QString &text);
