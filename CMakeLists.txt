@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(yokaiLauncher VERSION 0.1.1 LANGUAGES CXX)
+project(yokaiLauncher VERSION 0.1.3 LANGUAGES CXX)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg UiTools Widgets)
 find_package(yaml-cpp REQUIRED)
