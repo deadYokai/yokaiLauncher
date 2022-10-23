@@ -17,7 +17,7 @@
 #include <QFuture> 
 #include <QtConcurrent/QtConcurrentRun>
 #include <QStringList> 
-#include <iostream>
+// #include <iostream>
 #include <QtNetwork>
 #include <QNetworkAccessManager>
 #include <QUrl>

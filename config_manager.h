@@ -1,7 +1,6 @@
 
 #include <path.h>
 #include <qtyaml.h>
-#include <iostream>
 
 class CMan
 {

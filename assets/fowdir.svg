@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="11px"
+   height="20px"
+   viewBox="0 0 11 20"
+   version="1.1"
+   id="svg14"
+   sodipodi:docname="fowdir.svg"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs18" />
+  <sodipodi:namedview
+     id="namedview16"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="37.15"
+     inkscape:cx="5.5047106"
+     inkscape:cy="9.986541"
+     inkscape:window-width="1920"
+     inkscape:window-height="1046"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg14" />
+  <title
+     id="title2">arrow_back_ios</title>
+  <desc
+     id="desc4">Created with Sketch.</desc>
+  <g
+     id="Icons"
+     stroke="none"
+     stroke-width="1"
+     fill="none"
+     fill-rule="evenodd"
+     transform="matrix(-1,0,0,1,11.165545,0)">
+    <g
+       id="Rounded"
+       transform="translate(-548,-3434)">
+      <g
+         id="Navigation"
+         transform="translate(100,3378)">
+        <g
+           id="-Round-/-Navigation-/-arrow_back_ios"
+           transform="translate(442,54)">
+          <g
+             id="g8">
+            <polygon
+               id="Path"
+               opacity="0.87"
+               points="24,24 0,24 0,0 24,0 " />
+            <path
+               d="M 16.62,2.99 C 16.13,2.5 15.34,2.5 14.85,2.99 L 6.54,11.3 c -0.39,0.39 -0.39,1.02 0,1.41 l 8.31,8.31 c 0.49,0.49 1.28,0.49 1.77,0 0.49,-0.49 0.49,-1.28 0,-1.77 L 9.38,12 16.63,4.75 C 17.11,4.27 17.11,3.47 16.62,2.99 Z"
+               id="🔹-Icon-Color"
+               fill="#e6a32e" />
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+  <metadata
+     id="metadata194">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>arrow_back_ios</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

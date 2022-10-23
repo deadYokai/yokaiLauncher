@@ -12,6 +12,7 @@ set(CMAKE_AUTORCC ON)
 qt_add_executable(yokaiLauncher
     res.qrc
     config_manager.cpp
+    dirdialog.cpp
     launcher.cpp
 )
 

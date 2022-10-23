@@ -2,6 +2,10 @@
 <qresource>
     <file>assets/bg_1.png</file>
     <file>assets/icon.svg</file>
+    <file>assets/updir.svg</file>
+    <file>assets/fowdir.svg</file>
+    <file>assets/backdir.svg</file>
+    <file>assets/newdir.svg</file>
     <file>assets/default.qss</file>
     <file>assets/defconf.yml</file>
     <file>assets/e-Ukraine-Bold.otf</file>
@@ -11,5 +15,6 @@
     <file>assets/client.ui</file>
     <file>assets/dcon.ui</file>
     <file>assets/settw.ui</file>
+    <file>assets/dirdialog.ui</file>
 </qresource>
 </RCC>

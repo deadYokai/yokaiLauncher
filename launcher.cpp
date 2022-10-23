@@ -6,11 +6,13 @@
 #include <windows.h>
 #endif
 
+#include <dirdialog.h>
+
 // Custom debug outputs (idk why i'm need this)
-void dp(std::string a){	std::cout << a << std::endl;}
-void dp(char a){std::cout << a << std::endl;}
-void dp(int a){std::cout << a << std::endl;}
-void dp(double a){std::cout << a << std::endl;}
+void dp(QString a){	qDebug() << a;}
+void dp(char a){qDebug() << a;}
+void dp(int a){qDebug() << a;}
+void dp(double a){qDebug() << a; }
 
 static QWidget *loadUiFile(QString page, QWidget *parent = nullptr)
 {
@@ -208,15 +210,21 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 		}
 	 });
 	connect(mcPathSel, &QPushButton::clicked, this, [=](){ 
-		QFileDialog *dir = new QFileDialog(this);
-		dir->setFileMode(QFileDialog::Directory);
-		dir->setOption(QFileDialog::ShowDirsOnly);
-		dir->setViewMode(QFileDialog::List);
-		dir->setDirectory(Path.mcPath);
-		if(dir->exec()){
-			if(!dir->selectedFiles()[0].isEmpty()){
-				mcPathEdit->setText(dir->selectedFiles()[0]);
-			}
+		// QFileDialog *dir = new QFileDialog(this);
+		// dir->setFileMode(QFileDialog::Directory);
+		// dir->setOption(QFileDialog::ShowDirsOnly);
+		// dir->setViewMode(QFileDialog::List);
+		// dir->setDirectory(Path.mcPath);
+		// if(dir->exec()){
+		// 	if(!dir->selectedFiles()[0].isEmpty()){
+		// 		mcPathEdit->setText(dir->selectedFiles()[0]);
+		// 	}
+		// }
+		ChooseDirDialog *cd = new ChooseDirDialog(ui_mw);
+		cd->open(Path.mcPath);
+		QString path = cd->getPathStr();
+		if(!path.isEmpty()){
+			mcPathEdit->setText(path);
 		}
 	 });
 	connect(settsavebtn, &QPushButton::clicked, this, [=](){

@@ -3,7 +3,7 @@
 #include <QDir>
 #include <QTextStream>
 #include <QDebug>
-#include <fstream>
+// #include <fstream>
 
 CMan::CMan(){}
 
@@ -12,7 +12,7 @@ void CMan::load(QString pathtofile){
 	if(!QFile::exists(pathtofile)){
         QFile cfile(":/assets/defconf.yml");
         cfile.open(QFile::ReadOnly | QFile::Text);
-		std::cout << "Writing default config" << std::endl;
+		// std::cout << "Writing default config" << std::endl;
 		if(cfile.copy(pathtofile)){
             QFile::setPermissions(pathtofile, QFileDevice::ReadOther | QFileDevice::WriteOther | QFileDevice::WriteGroup | QFileDevice::ReadGroup | QFileDevice::WriteUser | QFileDevice::ReadUser | QFileDevice::WriteOwner | QFileDevice::ReadOwner);
             cfile.close();
@@ -44,7 +44,7 @@ QString CMan::getVal(QString valname){
 }
 
 void CMan::saveConf(){
-    std::cout << "Writing config..." << std::endl;
+    // std::cout << "Writing config..." << std::endl;
     QString conf = "yokaiLauncher:\n  ";
     YAML::Node a = config["yokaiLauncher"];
     for (YAML::const_iterator it=a.begin();it!=a.end();++it) {
