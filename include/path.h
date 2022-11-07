@@ -3,7 +3,7 @@
 
 static struct
 {
-    QString mcPath = QDir::homePath() + "/.yokai";
+    QString mcPath = ".yokai";
     const QString verPath = "/versions/";
     const QString libsPath = "/libraries/";
     const QString assPath = "/assets/";

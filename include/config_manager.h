@@ -1,13 +1,16 @@
 
 #include <path.h>
 #include <qtyaml.h>
-
+#include <QString>
+#include <QSettings>
 class CMan
 {
 
     public:
         CMan();
         
+	    QSettings settings;
+    
         void load(QString pathtofile);
         void saveConf();
 
@@ -19,6 +22,6 @@ class CMan
 
     private:
         YAML::Node config;
-        std::string path;
+        QString path;
 
 };

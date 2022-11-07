@@ -23,6 +23,7 @@
 #include <QtCore/QVector>
 #include <QtCore/QList>
 #include <QtCore/QPair>
+#include <QFile>
 
 namespace YAML {
 

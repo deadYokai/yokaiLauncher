@@ -1,11 +1,15 @@
+
+#include <ui_melement.h>
+#include <ui_dcon.h>
+#include <ui_client.h>
 #include <launcher.h>
+#include <QGraphicsBlurEffect>
 #include <fstream>
 #include <QDialog>
 #include <limits>
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
-
 #include <dirdialog.h>
 
 // Custom debug outputs (idk why i'm need this)
@@ -13,16 +17,6 @@ void dp(QString a){	qDebug() << a;}
 void dp(char a){qDebug() << a;}
 void dp(int a){qDebug() << a;}
 void dp(double a){qDebug() << a; }
-
-static QWidget *loadUiFile(QString page, QWidget *parent = nullptr)
-{
-	QFile file(":/assets/" + page + ".ui");
-	file.open(QIODevice::ReadOnly);
-
-	QUiLoader loader;
-	if(parent == nullptr) return loader.load(&file);
-	else return loader.load(&file, parent);
-}
 
 QString MWin::importStyle(QString stylePath){
 	QFile file(stylePath);
@@ -41,11 +35,11 @@ QString MWin::importStyle(QString stylePath){
 				_pixmapBg.load(bpath);
 			else{
 				qDebug() << "Warn: Background image not found on "+bpath+", setting to default";
-				_pixmapBg.load(":/assets/bg_1.png");
+				_pixmapBg.load(":/assets/bg.png");
 			}
 		}else{
 			qDebug() << "Warn: Invalid background image, setting to default";
-			_pixmapBg.load(":/assets/bg_1.png");
+			_pixmapBg.load(":/assets/bg.png");
 		}
 	}
 	return styleSheet;
@@ -111,32 +105,11 @@ uint64_t getSystemRam()
 // Settings Button event
 void MWin::settbtn_click(){
 
-	QCheckBox *isf = settingsWidget->findChild<QCheckBox*>("isMcFullscreen");
-	QLineEdit *jvma = settingsWidget->findChild<QLineEdit*>("jvmaddargs");
-	QSlider *rams = settingsWidget->findChild<QSlider*>("ramslider");
-	QLabel *mml = settingsWidget->findChild<QLabel*>("maxmemLabel");
-	QLabel *cram = settingsWidget->findChild<QLabel*>("currRam");
 
-	bool ifsc = QVariant(config->getVal("isFullscreen")).toBool();
-	isf->setCheckState(ifsc ? Qt::Checked : Qt::Unchecked);
-
-	jvma->setText(config->getVal("jvmargs"));
-
-	uint64_t mbRam = getSystemRam() / (1024ul * 1024ul);	
-
-	rams->setMaximum(mbRam);
-	rams->setMinimum(2048);
-	connect(rams, &QSlider::valueChanged, [=](int value){
-		cram->setText("Current RAM: " + QString::number(value) + "MB");
-	});
-
-	mml->setText(QString::number(mbRam/1024) + "GB");
-	cram->setText("Current RAM: " + QString::number(rams->value()) + "MB");
-
-	pWidget->hide();
-	mwCW->hide();
-	bwi->hide();
-	uwi->show();
+	// pWidget->hide();
+	// mwCW->hide();
+	// bwi->hide();
+	// uwi->show();
 }
 
 void MWin::disableControls(bool a = true){
@@ -145,53 +118,76 @@ void MWin::disableControls(bool a = true){
 	vList->setEnabled(val);
 	playBtn->setEnabled(val);
 	fabricb->setEnabled(val);
-	settingsb->setEnabled(val);
+}
+
+// Custom MessageBox
+void MWin::msgBox(QString msg){
+	QDialog *box = new QDialog(ui_mw);
+	box->setWindowModality(Qt::WindowModal);
+	QPushButton *btn = new QPushButton("OK", box);
+	QLabel *label = new QLabel(msg, box);
+	QVBoxLayout *lay = new QVBoxLayout();
+	lay->addWidget(label);
+	lay->addWidget(btn);
+	box->setLayout(lay);
+	btn->setStyleSheet("font-size: 18px");
+	label->setStyleSheet("font-size: 16px");
+	btn->setMaximumHeight(32);
+	lay->setAlignment(label, Qt::AlignHCenter | Qt::AlignVCenter);
+	box->setFixedSize(500, 300);
+	box->open();
+	connect(btn, &QPushButton::clicked, this, [=]() { 
+		box->close();
+	});
 }
 
 
 // UI & Events Init
-MWin::MWin(QWidget *parent) : QMainWindow(parent)
+MWin::MWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MWin)
 {
 
+	ui->setupUi(this);
 	this->setWindowFlags(Qt::Window);
 	this->setWindowModality(Qt::ApplicationModal);
-
-	ui_mw = loadUiFile("client", this);
-	mm = findChild<QWidget*>("ClientForm");
-	mwCW = findChild<QWidget*>("Logo");
-	nickname = findChild<QLineEdit*>("nickname");
-	pWidget = findChild<QWidget*>("progressWidget");
-	vList = findChild<QComboBox*>("versionList");
-	pLabel = findChild<QLabel*>("pLabel");
-	bwi = findChild<QWidget*>("bottomWidget");
-	progressBar = findChild<QProgressBar*>("progressBar");
-	playBtn = findChild<QPushButton*>("playBtn");
-	fabricb = findChild<QCheckBox*>("fabricb");
-	settingsb = findChild<QPushButton*>("settb");
-	uwi = findChild<QWidget*>("widget");
 	
-	QVBoxLayout *l = new QVBoxLayout(uwi);
-	uwi->setLayout(l);
-	settingsWidget = loadUiFile("settw", uwi);
-	l->addWidget(settingsWidget);
-	uwi->close();
+	ui_mw = ui->ClientForm;
+	mwCW = ui->Logo;
+	nickname = ui->nickname;
+	pWidget = ui->progressWidget;
+	vList = ui->versionList;
+	pLabel = ui->pLabel;
+	progressBar = ui->progressBar;
+	playBtn = ui->playBtn;
+	fabricb = ui->fabricb;
 	
-	themeBox = settingsWidget->findChild<QComboBox*>("themesBox");
-	mcPathEdit = settingsWidget->findChild<QLineEdit*>("mcPathEdit");
-	mcPathSel = settingsWidget->findChild<QPushButton*>("mcPathSelect");
-	mcFolBtn = settingsWidget->findChild<QPushButton*>("mcFolderBtn");
+	themeBox = ui->themesBox;
+	mcPathEdit = ui->mcPathEdit;
+	mcPathSel = ui->mcPathSelect;
+	mcFolBtn = ui->mcFolderBtn;
 
 	bid = new QLabel(ui_mw);
 	bid->setStyleSheet("font-size: 14px");
 	bid->setGeometry(8, 8, 1000, 32);
-	settsavebtn = settingsWidget->findChild<QPushButton*>("settsaveb");
+	settsavebtn = ui->settsaveb;
 	bid->setText("Build #" + QString::number(BUILDID));
 
-	ui_mw->setWindowFlags(Qt::Widget);
-	
+	ui->verLab->setText(QString::number(_VERSION));
+
+	ui->stackedWidget->setMaximumWidth(0);
+
+	connect(ui->settb, &QPushButton::clicked, this, &MWin::pageBtnClick);
+	connect(ui->modsBtn, &QPushButton::clicked, this, &MWin::pageBtnClick);
+	connect(ui->modpackBtn, &QPushButton::clicked, this, &MWin::pageBtnClick);
+	connect(ui->modloaderBtn, &QPushButton::clicked, this, &MWin::pageBtnClick);
+
+	isf = ui->isMcFullscreen;
+	jvma = ui->jvmaddargs;
+	rams = ui->ramslider;
+	mml = ui->maxmemLabel;
+	cram = ui->currRam;
+
 	connect(vList, &QComboBox::currentTextChanged, this, &MWin::verChanged);
 	connect(fabricb, &QCheckBox::stateChanged, this, &MWin::isFabricbox);
-	connect(settingsb, &QPushButton::clicked, this, &MWin::settbtn_click);
 
 	connect(mcFolBtn, &QPushButton::clicked, this, [=](){ QDesktopServices::openUrl(QUrl("file:///"+config->getVal("mcdir"), QUrl::TolerantMode)); });
 	connect(playBtn, &QPushButton::clicked, this, [=](){
@@ -200,37 +196,38 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 		QString dpath = Path.verPath + vList->currentText();
 		QString manifestUri = vData.value(vList->currentText());
 		QDir d;
+		QList<MLMaven*> files;
 		if(d.mkpath(getfilepath(dpath))){
 			progstate = PState::VERMANDOWN;
 			currManFile = dpath + "/" + vList->currentText() + ".json";
-			if(!QFile::exists(getfilepath(dpath + "/" + vList->currentText() + ".json")))
-				downloadFile(QUrl(manifestUri), dpath + "/" + vList->currentText() + ".json");
-			else
+			if(!QFile::exists(getfilepath(dpath + "/" + vList->currentText() + ".json"))){
+				files.append(new MLMaven(QUrl(manifestUri), dpath + "/" + vList->currentText() + ".json"));
+				dwF(files);
+			}else
 				vermandown();
 		}
 	 });
 	connect(mcPathSel, &QPushButton::clicked, this, [=](){ 
-		// QFileDialog *dir = new QFileDialog(this);
-		// dir->setFileMode(QFileDialog::Directory);
-		// dir->setOption(QFileDialog::ShowDirsOnly);
-		// dir->setViewMode(QFileDialog::List);
-		// dir->setDirectory(Path.mcPath);
-		// if(dir->exec()){
-		// 	if(!dir->selectedFiles()[0].isEmpty()){
-		// 		mcPathEdit->setText(dir->selectedFiles()[0]);
-		// 	}
-		// }
-		ChooseDirDialog *cd = new ChooseDirDialog(ui_mw);
-		cd->open(Path.mcPath);
-		QString path = cd->getPathStr();
-		if(!path.isEmpty()){
-			mcPathEdit->setText(path);
+		QFileDialog *dir = new QFileDialog(this);
+		dir->setFileMode(QFileDialog::Directory);
+		dir->setOption(QFileDialog::ShowDirsOnly);
+		dir->setViewMode(QFileDialog::List);
+		dir->setDirectory(Path.mcPath);
+		if(dir->exec()){
+			if(!dir->selectedFiles()[0].isEmpty()){
+				config->settings.setValue("mcpath", QDir::cleanPath(dir->selectedFiles()[0]));
+				mcPathEdit->setText(dir->selectedFiles()[0]);
+			}
 		}
+		// TODO
+		// ChooseDirDialog *cd = new ChooseDirDialog(ui_mw);
+		// cd->open(Path.mcPath);
+		// QString path = cd->getPathStr();
+		// if(!path.isEmpty()){
+		// 	mcPathEdit->setText(path);
+		// }
 	 });
 	connect(settsavebtn, &QPushButton::clicked, this, [=](){
-		QCheckBox *isf = settingsWidget->findChild<QCheckBox*>("isMcFullscreen");
-		QLineEdit *jvma = settingsWidget->findChild<QLineEdit*>("jvmaddargs");
-		QSlider *rams = settingsWidget->findChild<QSlider*>("ramslider");
 		if(themeBox->currentIndex() > 0){
 			qDebug() << themeBox->currentIndex();
 			config->setVal("theme", themeBox->currentText());
@@ -251,14 +248,26 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent)
 		config->setVal("ram", rams->value());
 		config->setVal("isFullscreen", ((isf->checkState() == Qt::Checked) ? 1 : 0));
 		config->setVal("jvmargs", jvma->text());
-		pWidget->show();
-		mwCW->show();
-		bwi->show();
-		uwi->close();
+		msgBox("Saved");
 	});
+
+	connect(&manager, &QNetworkAccessManager::finished,
+            this, &MWin::downloadFinished);
 
 }
 
+
+void MWin::pageBtnClick(){
+	int index = sender()->property("menuPage").toInt();
+
+	if(ui->stackedWidget->width() != 0 && index == ui->stackedWidget->currentIndex()){
+		ui->stackedWidget->setMaximumWidth(0);
+	}else{
+		ui->stackedWidget->setMaximumWidth(512);
+	}
+
+	ui->stackedWidget->setCurrentIndex(index);
+}
 
 void MWin::paintEvent(QPaintEvent *pe)
 {
@@ -286,53 +295,36 @@ void MWin::paintEvent(QPaintEvent *pe)
 
 void MWin::closeEvent (QCloseEvent *event)
 {
+	if(run) process->kill();
     qDebug() << "Bye...";
 }
 
 MWin::~MWin(){
-	if(run) process->kill();
 	if(!isMaximized()){
 		config->setVal("height", height());
 		config->setVal("width", width());
 	}
 	config->setVal("maximized", isMaximized());
 	dp("===============================\n");
-}
 
-// Custom MessageBox
-void MWin::msgBox(QString msg){
-	QDialog *box = new QDialog(ui_mw);
-	box->setWindowModality(Qt::WindowModal);
-	QPushButton *btn = new QPushButton("OK", box);
-	QLabel *label = new QLabel(msg, box);
-	QVBoxLayout *lay = new QVBoxLayout();
-	lay->addWidget(label);
-	lay->addWidget(btn);
-	box->setLayout(lay);
-	btn->setStyleSheet("font-size: 18px");
-	label->setStyleSheet("font-size: 16px");
-	btn->setMaximumHeight(32);
-	lay->setAlignment(label, Qt::AlignHCenter | Qt::AlignVCenter);
-	box->setFixedSize(500, 300);
-	box->open();
-	connect(btn, &QPushButton::clicked, this, [=]() { 
-		box->close();
-	});
+	delete ui;
 }
 
 void MWin::changeProgressState(int progress, QString text, bool showBar = true, bool show = true){
+	pWidget->setVisible(show);
 	int mH = show ? 40 : 0;
 	pWidget->setMaximumHeight(mH);
-	int pHeight = showBar ? 8 : 0;
+	int pHeight = showBar ? 32 : 0;
 	progressBar->setMaximumHeight(pHeight);
 	progressBar->setValue(progress);
 	pLabel->setText(text);
 }
 
 void MWin::changeProgressState(int progress, int max, QString text, bool showBar = true, bool show = true){
+	pWidget->setVisible(show);
 	int mH = show ? 40 : 0;
 	pWidget->setMaximumHeight(mH);
-	int pHeight = showBar ? 8 : 0;
+	int pHeight = showBar ? 32 : 0;
 	progressBar->setMaximumHeight(pHeight);
 	progressBar->setMaximum(max);
 	progressBar->setValue(progress);
@@ -340,8 +332,7 @@ void MWin::changeProgressState(int progress, int max, QString text, bool showBar
 }
 
 void MWin::changeProgressState(bool show){
-	int mH = show ? 40 : 0;
-	pWidget->setMaximumHeight(mH);
+	pWidget->setVisible(show);
 }
 
 bool MWin::checksha1(QString path, QString sha1){
@@ -368,9 +359,18 @@ QStringList MWin::getJargs(){
 	#ifdef Q_OS_WIN
 	paths = ";";
 	#endif
-	bool isFabric = QVariant(config->getVal("isFabric")).toBool();
-	if(isFabric) args.append(" -DFabricMcEmu="+currmanj["mainClass"].toString());
-	QString mainclass = isFabric ? fabMclass : currmanj["mainClass"].toString();
+
+	switch(cML){
+		case ModLoader::Fabric:
+			args.append(" -DFabricMcEmu="+currmanj["mainClass"].toString());
+			break;
+		case ModLoader::Quilt:
+			break;
+		default:
+			break;
+	}
+
+	QString mainclass = ( cML != ModLoader::None ) ? MLMclass : currmanj["mainClass"].toString();
 	QString libs = "-cp ";
 	QJsonArray ja = currmanj["libraries"].toArray();
 	for(QJsonArray::iterator it = ja.begin(); it != ja.end(); ++it){
@@ -404,7 +404,7 @@ QStringList MWin::getJargs(){
 			libs.append(libPath + paths);
 	}
 	
-	if(isFabric) libs.append(fabLibs);
+	if(cML != ModLoader::None) libs.append(MLLibs);
 	
 	args.append(" " + libs + getfilepath(Path.verPath+ver+"/"+ver+".jar"));
 	args.append(" " + mainclass);
@@ -426,6 +426,102 @@ QStringList MWin::getJargs(){
 	return args.split(" ");
 }
 
+QList<MLMaven*> MWin::getMavenData(QJsonArray ja){
+	QList<MLMaven*> list;
+	for(QJsonArray::iterator it = ja.begin(); it != ja.end(); ++it){
+		QJsonValue a = *it;
+		QJsonObject jo = a.toObject();
+		QStringList libMaven = jo["name"].toString().split(":");
+		QString mavenUri = jo["url"].toString();
+		QString apath = libMaven[0].replace(".", "/");
+		QString name = libMaven[1];
+		QString ver = libMaven[2];
+		QString qpath = apath + "/" + name + "/" + ver + "/" + name + "-" + ver + ".jar";
+		QUrl libUrl = QUrl(mavenUri + qpath);
+		if(!QFile::exists(getfilepath(Path.libsPath + qpath))){
+			list.append(new MLMaven(libUrl, Path.libsPath + qpath));
+		}
+		QString paths = ":";
+		#ifdef Q_OS_WIN
+		paths = ";";
+		#endif
+		MLLibs.append(getfilepath(Path.libsPath + qpath) + paths);
+	}
+	return list;
+}
+
+void MWin::quiltDownload(){
+	QString loaderMaven = "https://maven.quiltmc.org/repository/release/";
+	QString fabricMaven = "https://maven.fabricmc.net/";
+
+	QString fabricMcMavenDir = "net/fabricmc/";
+	QString McMavenDir = "org/quiltmc/";
+	QString MavenDir = McMavenDir + "quilt-loader/";
+	QString fp = ".quilt/quilt-loader-"+quiltVer;
+	QString path = fp +".json";
+	QString fab = loaderMaven+MavenDir+quiltVer+"/quilt-loader-"+quiltVer;
+	progstate = PState::MLDown;
+	QList<MLMaven*> files;
+	if(!QFile::exists(getfilepath(path))){
+		QFileInfo fi(getfilepath(path));
+		QDir dir(fi.dir().path());
+		dir.setNameFilters(QStringList() << "quilt-loader-*.*\\.jar" << "quilt-loader-*.*\\.json");
+		dir.setFilter(QDir::Files);
+		foreach(QString dirFile, dir.entryList())
+		{
+			dir.remove(dirFile);
+		}
+		files.append(new MLMaven(fab+".json", path));
+	}
+	
+	if(!QFile::exists(getfilepath(fp+".jar"))){
+		currFile = getfilepath(fp+".jar");
+		files.append(new MLMaven(fab+".jar", fp+".jar"));
+	}
+
+
+	QString qpath = fabricMcMavenDir + "/intermediary/" + currmanj["id"].toString() + "/intermediary-" + currmanj["id"].toString() + "-v2.jar";
+	QString libPath = Path.libsPath + qpath;
+
+	if(!QFile::exists(getfilepath(libPath))){
+		currFile = getfilepath(libPath);
+		files.append(new MLMaven(fabricMaven + qpath, libPath));
+	}
+
+	progstate = PState::QuiltPostDownload;
+	dwF(files);
+	
+}
+
+void MWin::quiltpost(){
+	
+	QString fp = ".quilt/quilt-loader-"+quiltVer;
+	QString path = fp +".json";
+	QList<MLMaven*> files;
+	QFile f(getfilepath(path));
+	if (!f.open(QFile::ReadOnly | QFile::Text)) return;
+	QTextStream in(&f);
+	QString str = in.readAll();
+	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
+	QJsonArray ja = jsonResponse.object()["libraries"].toObject()["common"].toArray();
+	MLMclass = jsonResponse.object()["mainClass"].toObject()["client"].toString();
+	QString paths = ":";
+	#ifdef Q_OS_WIN
+	paths = ";";
+	#endif
+
+	files = getMavenData(ja);
+
+	QString fabricMcMavenDir = "net/fabricmc/";
+	QString qpath = fabricMcMavenDir + "/intermediary/" + currmanj["id"].toString() + "/intermediary-" + currmanj["id"].toString() + "-v2.jar";
+	QString libPath = Path.libsPath + qpath;
+
+	MLLibs.append(getfilepath(libPath)+paths);
+	MLLibs.append(getfilepath(fp + ".jar")+paths);
+	progstate = PState::READY2PLAY;
+	dwF(files);
+}
+
 // Check Fabric and Download
 void MWin::fabricDownload(){
 	QString fabricMaven = "https://maven.fabricmc.net/";
@@ -434,7 +530,7 @@ void MWin::fabricDownload(){
 	QString fp = ".fabric/fabric-loader-"+fabVer;
 	QString path = fp +".json";
 	QString fab = fabricMaven+fabricMavenDir+fabVer+"/fabric-loader-"+fabVer;
-	progstate = PState::FabricDown;
+	progstate = PState::MLDown;
 	if(!QFile::exists(getfilepath(path))){
 		QFileInfo fi(getfilepath(path));
 		QDir dir(fi.dir().path());
@@ -444,13 +540,13 @@ void MWin::fabricDownload(){
 		{
 			dir.remove(dirFile);
 		}
-		downloadFile(fab+".json", path);
+		// downloadFile(fab+".json", path);
 		return;
 	}
 
 	if(!QFile::exists(getfilepath(fp+".jar"))){
 		currFile = getfilepath(fp+".jar");
-		downloadFile(fab+".jar", fp+".jar");
+		// downloadFile(fab+".jar", fp+".jar");
 		return;
 	}
 
@@ -460,7 +556,7 @@ void MWin::fabricDownload(){
 	QString str = in.readAll();
 	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
 	QJsonArray ja = jsonResponse.object()["libraries"].toObject()["common"].toArray();
-	fabMclass = jsonResponse.object()["mainClass"].toObject()["client"].toString();
+	MLMclass = jsonResponse.object()["mainClass"].toObject()["client"].toString();
 	QString paths = ":";
 	#ifdef Q_OS_WIN
 	paths = ";";
@@ -474,11 +570,11 @@ void MWin::fabricDownload(){
 		QString ver = libMaven[2];
 		QString qpath = apath + "/" + name + "/" + ver + "/" + name + "-" + ver + ".jar";
 		QString libPath = Path.libsPath + qpath;
-		fabLibs.append(getfilepath(libPath)+paths);
+		MLLibs.append(getfilepath(libPath)+paths);
 		QUrl libUrl = QUrl(fabricMaven + qpath);
 		currFile = libPath;
 		if(!QFile::exists(getfilepath(libPath))){
-			downloadFile(libUrl, libPath);
+			// downloadFile(libUrl, libPath);
 			return;
 		}
 	}
@@ -489,13 +585,13 @@ void MWin::fabricDownload(){
 
 	if(!QFile::exists(getfilepath(libPath))){
 		currFile = getfilepath(libPath);
-		downloadFile(fabricMaven + qpath, libPath);
+		// downloadFile(fabricMaven + qpath, libPath);
 		return;
 	}
 
 	dp("Fabric enabled");
-	fabLibs.append(getfilepath(libPath)+paths);
-	fabLibs.append(getfilepath(fp + ".jar")+paths);
+	MLLibs.append(getfilepath(libPath)+paths);
+	MLLibs.append(getfilepath(fp + ".jar")+paths);
 	checkJava();
 }
 
@@ -505,6 +601,7 @@ void MWin::checkJava(){
 	qDebug() << "Java init";
 #ifdef Q_OS_WIN
 	
+	QList<MLMaven*> files;
 	QUrl jmanifest = QUrl("https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json");
 	QString winp = "x86";
 	#ifdef Q_OS_WIN64
@@ -514,7 +611,10 @@ void MWin::checkJava(){
 
 	if(!QFile::exists(getfilepath("java/all.json"))){
 		currFile = getfilepath("java/all.json");
-		downloadFile(jmanifest, "java/all.json");
+		// downloadFile(jmanifest, "java/all.json");
+		files.append(new MLMaven(jmanifest, getfilepath("java/all.json")));
+		dwF(files);
+
 		return;
 	}
 	
@@ -528,7 +628,10 @@ void MWin::checkJava(){
 		QString str = in.readAll();
 		QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
 		QUrl runtimeurl = QUrl(jsonResponse.object()["windows-"+winp].toObject()[runtimever].toArray()[0].toObject()["manifest"].toObject()["url"].toString());
-		downloadFile(runtimeurl, "java/"+runtimever+"/windows-"+winp+".json");
+		// downloadFile(runtimeurl, "java/"+runtimever+"/windows-"+winp+".json");
+
+		files.append(new MLMaven(runtimeurl, "java/"+runtimever+"/windows-"+winp+".json"));
+		dwF(files);
 		f.close();
 		return;
 	}
@@ -538,16 +641,19 @@ void MWin::checkJava(){
 	QTextStream in(&f);
 	QString str = in.readAll();
 	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
-	QJsonObject files = jsonResponse.object()["files"].toObject();
-	QStringList keys = files.keys();
+	QJsonObject jfiles = jsonResponse.object()["files"].toObject();
+	QStringList keys = jfiles.keys();
 	for (QStringList::iterator it = keys.begin(); it != keys.end(); ++it) {
 		QString b = *it;
-		QJsonObject a = files[b].toObject();
+		QJsonObject a = jfiles[b].toObject();
 		if(a["type"] == "file"){
 			if(!QFile::exists(getfilepath("java/"+runtimever+"/windows-"+winp+"/"+b))){
 				QUrl uri = QUrl(a["downloads"].toObject()["raw"].toObject()["url"].toString());
 				currFile = getfilepath("java/"+runtimever+"/windows-"+winp+"/"+b);
-				downloadFile(uri, "java/"+runtimever+"/windows-"+winp+"/"+b);
+				// downloadFile(uri, "java/"+runtimever+"/windows-"+winp+"/"+b);
+				
+				files.append(new MLMaven(uri, "java/"+runtimever+"/windows-"+winp+"/"+b));
+				dwF(files);
 				return;
 			}
 		}
@@ -566,7 +672,7 @@ void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
 	disableControls(false);
 	changeProgressState(0, "Game exit", false);
 	if(debug){
-		QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+		QPlainTextEdit *pp = dcon->debugT;
 		pp->appendPlainText("Exit code: " + QString::number(exitCode));
 	}
 	qDebug() << "Exit code: " << exitCode;
@@ -583,7 +689,7 @@ void MWin::mcend(int exitCode, QProcess::ExitStatus ExitStatus){
 void MWin::re(){
 	QProcess *p = qobject_cast<QProcess*>(sender());
 	p->setReadChannel(QProcess::StandardError);
-	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+	QPlainTextEdit *pp = dcon->debugT;
 	while(p->canReadLine())
 	{
 		pp->appendPlainText(p->readLine().replace("\n", ""));
@@ -595,8 +701,8 @@ void MWin::re(){
 void MWin::rr(){
 	QProcess *p = qobject_cast<QProcess*>(sender());
 	p->setReadChannel(QProcess::StandardOutput);
-	QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
-	pp->appendPlainText("Minecraft launching...");
+	QPlainTextEdit *pp = dcon->debugT;
+	// pp->appendPlainText("Minecraft launching...");
 	while(p->canReadLine())
 	{
 		pp->appendPlainText(p->readLine().replace("\n", ""));
@@ -618,13 +724,13 @@ void MWin::launch(){
 	process = new QProcess(this);
 	run = true;
 	if(debug){
-		QPlainTextEdit *pp = dcon->findChild<QPlainTextEdit*>("debugT");
+		QPlainTextEdit *pp = dcon->debugT;
 		pp->appendPlainText("Launching...");
 	}
-	connect(process, SIGNAL(finished(int , QProcess::ExitStatus )), this, SLOT(mcend(int , QProcess::ExitStatus )));
+	connect(process, &QProcess::finished, this, &MWin::mcend);
 	if(debug){
-		connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(rr()));
-		connect(process, SIGNAL(readyReadStandardError()), this, SLOT(re()));
+		connect(process, &QProcess::readyReadStandardOutput, this, &MWin::rr);
+		connect(process, &QProcess::readyReadStandardError, this, &MWin::re);
 	}else
 		setWindowState(Qt::WindowMinimized);
 	changeProgressState(0, "Launching...", false);
@@ -663,7 +769,7 @@ void MWin::httpFinish(){
 			file.reset();
 		}
 		if (reply->error()) {
-			if(reply->error() == QNetworkReply::ContentNotFoundError && progstate == PState::FabricDown){
+			if(reply->error() == QNetworkReply::ContentNotFoundError && progstate == PState::MLDown){
 				msgBox("Fabric not supported in version: "+currmanj["id"].toString());
 				progstate = PState::INIT;
 				progressFinish();
@@ -679,6 +785,7 @@ void MWin::httpFinish(){
 	}
 	const QVariant redirectionTarget = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
 
+	dwFiles.removeAll(reply);
 	reply->deleteLater();
 	reply = nullptr;
 
@@ -693,7 +800,6 @@ void MWin::httpFinish(){
         httpReq(redirectedUrl);
         return;
     }	
-	
 	progressFinish();
 }
 
@@ -748,6 +854,7 @@ void MWin::manlistimport(){
 	QJsonObject jsonObject = jsonResponse.object();
 	QString latestVersion = jsonObject["latest"].toObject()["release"].toString();
 	fabVer = jsonObject["fabric"].toString();
+	quiltVer = jsonObject["quilt"].toString();
 	QJsonArray vDataArr = jsonObject["versions"].toArray();
 	qDebug() << "Latest version: " << latestVersion;
 	for (QJsonArray::iterator it = vDataArr.begin(); it != vDataArr.end(); ++it) {
@@ -763,36 +870,7 @@ void MWin::manlistimport(){
 	disableControls(false);
 }
 
-bool MWin::isWhiteSpace(const QString & str)
-{
-	return QRegularExpression("\\s.").match(str).hasMatch();
-}
-
-// Download assets for Minecrafts
-void MWin::assdown(){
-	QJsonObject ja = assmanj["objects"].toObject();
-	assm = ja.size();
-	ass = 0;
-	for(QJsonObject::iterator it = ja.begin(); it != ja.end(); ++it){
-		++ass;
-		QJsonValue a = *it;
-		QJsonObject jo = a.toObject();
-		QString hash = jo["hash"].toString();
-		QString chash = QString(hash.data()[0]) + QString(hash.data()[1]);
-		QString apath = Path.assPath + "objects/" + chash + "/" + hash;
-		QUrl aurl = QUrl("http://resources.download.minecraft.net/" + chash + "/" + hash);
-		if(!QFile::exists(getfilepath(apath))){
-			downloadFile(aurl, apath);
-			return;
-		}
-
-		if(!checksha1(getfilepath(apath), hash)){
-			downloadFile(aurl, apath);
-			return;
-		}
-	}
-	ass = 0;
-	assm = 0;
+void MWin::r2run(){
 	dp("Ready to play");
 	progstate = PState::INIT;
 	if(isWhiteSpace(nickname->text())){
@@ -807,17 +885,57 @@ void MWin::assdown(){
 		disableControls(false);
 		return;
 	}
-	bool isFabric = QVariant(config->getVal("isFabric")).toBool();
-	if(isFabric){
-		fabricDownload();
-		return;
+	cML = ModLoader::Quilt;
+	switch(cML){
+		case ModLoader::Fabric:
+			fabricDownload();
+			break;
+		case ModLoader::Quilt:
+			quiltDownload();
+			break;
+		default:
+			checkJava();
 	}
-	else checkJava();
+}
+
+bool MWin::isWhiteSpace(const QString & str)
+{
+	return QRegularExpression("\\s.").match(str).hasMatch();
+}
+
+// Download assets for Minecrafts
+void MWin::assdown(){
+	QJsonObject ja = assmanj["objects"].toObject();
+	QList<MLMaven*> files;
+	for(QJsonObject::iterator it = ja.begin(); it != ja.end(); ++it){
+		++ass;
+		QJsonValue a = *it;
+		QJsonObject jo = a.toObject();
+		QString hash = jo["hash"].toString();
+		QString chash = QString(hash.data()[0]) + QString(hash.data()[1]);
+		QString apath = Path.assPath + "objects/" + chash + "/" + hash;
+		QUrl aurl = QUrl("http://resources.download.minecraft.net/" + chash + "/" + hash);
+		if(!QFile::exists(getfilepath(apath))){
+			files.append(new MLMaven(aurl, apath));
+		}
+
+		// if(!checksha1(getfilepath(apath), hash)){
+			// if(!files.contains(aurl)){
+			// 	files.append(aurl);
+			// 	pat.append(apath);
+				// downloadFile(aurl, apath);
+				// return;
+			// }
+		// }
+	}
+
+	dwF(files);
+
 }
 
 // Download Java libraries
 void MWin::libdown(){
-
+	QList<MLMaven*> files;
 	QJsonArray ja = currmanj["libraries"].toArray();
 	for(QJsonArray::iterator it = ja.begin(); it != ja.end(); ++it){
 		QJsonValue a = *it;
@@ -835,14 +953,12 @@ void MWin::libdown(){
 #endif
 			if(jo["downloads"].toObject()["classifiers"].toObject().contains("natives-"+p)){
 				if(!QFile::exists(getfilepath(libPath))){
-					downloadFile(libUrl, libPath);
-					return;
+					files.append(new MLMaven(libUrl, libPath));
 				}
 				QString u = jo["downloads"].toObject()["classifiers"].toObject()["natives-"+p].toObject()["url"].toString();
 				QString pp = Path.libsPath + jo["downloads"].toObject()["classifiers"].toObject()["natives-"+p].toObject()["path"].toString();
 				if(!QFile::exists(getfilepath(pp))){
-					downloadFile(u, pp);
-					return;
+					files.append(new MLMaven(u, pp));
 				}
 			}
 		}
@@ -857,27 +973,24 @@ void MWin::libdown(){
 				if(jo["rules"].toArray()[0].toObject()["os"].toObject()["name"].toString() == "osx")
 #endif
 				{
-					downloadFile(libUrl, libPath);
-					return;
+					files.append(new MLMaven(libUrl, libPath));
 				}
 			}else{
-				downloadFile(libUrl, libPath);
-				return;
+				files.append(new MLMaven(libUrl, libPath));
 			}
 		}
 
-		if(!checksha1(getfilepath(libPath), libSha1)){
-			downloadFile(libUrl, libPath);
-			return;
-		}
+		// if(!checksha1(getfilepath(libPath), libSha1)){
+		// 	downloadFile(libUrl, libPath);
+		// 	return;
+		// }
 	}
-	progstate = PState::ASSDOWN;
-	assdown();
+
+	dwF(files);
 }
 
 // Check minecraft version and download
 void MWin::vermandown(){
-
 	QFile f(getfilepath(currManFile));
 	if (!f.open(QFile::ReadOnly | QFile::Text)) return;
 	QTextStream in(&f);
@@ -889,12 +1002,17 @@ void MWin::vermandown(){
 	QString id = currmanj["assetIndex"].toObject()["id"].toString();
 	QUrl uri = QUrl(currmanj["assetIndex"].toObject()["url"].toString());
 	QString assPathFile = Path.assPath + "/indexes/" + id + ".json";
-	if(!QFile::exists(getfilepath(dpath)))
-		downloadFile(QUrl(currmanj["downloads"].toObject()["client"].toObject()["url"].toString()), dpath);
-	else{
-		if(!QFile::exists(getfilepath(assPathFile)))
-			downloadFile(uri, assPathFile);
-		else{
+	QList<MLMaven*> files;
+	if(!QFile::exists(getfilepath(dpath))){
+		files.append(new MLMaven(QUrl(currmanj["downloads"].toObject()["client"].toObject()["url"].toString()), dpath));
+		dwF(files);
+		return;
+	}else{
+		if(!QFile::exists(getfilepath(assPathFile))){
+			files.append(new MLMaven(uri, assPathFile));
+			dwF(files);
+			return;
+		}else{
 			QFile f(getfilepath(assPathFile));
 			if (!f.open(QFile::ReadOnly | QFile::Text)) return;
 			QTextStream in(&f);
@@ -927,10 +1045,11 @@ void MWin::progressFinish(){
 			vermandown();
 			break;
 		case PState::LIBDOWN:
-			libdown();
+			progstate = PState::ASSDOWN;
+			assdown();
 			break;
 		case PState::ASSDOWN:
-			assdown();
+			r2run();
 			break;
 		case PState::READY2PLAY:
 			checkJava();
@@ -938,8 +1057,23 @@ void MWin::progressFinish(){
 		case PState::JAVAIN:
 			checkJava();
 			break;
-		case PState::FabricDown:
-			fabricDownload();
+		case PState::QuiltPostDownload:
+			quiltpost();
+			break;
+		case PState::MLDown:
+			switch(cML){
+				case ModLoader::Fabric:
+					fabricDownload();
+					break;
+				case ModLoader::Quilt:
+					quiltDownload();
+					break;
+				case ModLoader::Forge:
+					msgBox("Not supported, yet!");
+					break;
+				default:
+					break;
+			}
 			break;
 		default:
 			changeProgressState(0, "Done.", false);
@@ -949,33 +1083,114 @@ void MWin::progressFinish(){
 
 // Connect http request events
 void MWin::httpReq(const QUrl &requestedUrl) {
-	reply = qnam.get(QNetworkRequest(requestedUrl));
+	QNetworkRequest r(requestedUrl);
+	r.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
+	reply = qnam.get(r);
 	if(progstate != PState::MANCHEKSUM){
-		connect(reply, &QIODevice::readyRead, this, &MWin::httpRead);
-		connect(reply, &QNetworkReply::downloadProgress, this, &MWin::progress_func);
+		if(!m){
+			connect(reply, &QIODevice::readyRead, this, &MWin::httpRead);
+			connect(reply, &QNetworkReply::downloadProgress, this, &MWin::progress_func);
+		}
 		connect(reply, &QNetworkReply::finished, this, &MWin::httpFinish);
 	}else{
 		connect(reply, &QIODevice::readyRead, this, &MWin::getCheckSum);
 	}
+
 }
 
-// Download init
-void MWin::downloadFile(const QUrl &requestedUrl, QString path){
-	
-	path = getfilepath(path);
+void MWin::doDownload(const QUrl &url, const QString &path = nullptr)
+{
+	changeProgressState(true);
+    QNetworkRequest request(url);
+    QNetworkReply *reply = manager.get(request);
+#if QT_CONFIG(ssl)
+    connect(reply, &QNetworkReply::sslErrors,
+            this, &MWin::sslErrors);
+#endif
+	dwMap[reply] = path;
+    currentDownloads.append(reply);
+}
+
+void MWin::sslErrors(const QList<QSslError> &sslErrors)
+{
+#if QT_CONFIG(ssl)
+    for (const QSslError &error : sslErrors)
+        qDebug() << "SSL error: " << error.errorString();
+#else
+    Q_UNUSED(sslErrors);
+#endif
+}
+
+bool MWin::saveToDisk(const QString &filename, QIODevice *data)
+{
+    QFile file(filename);
 	QDir d;
-	QFileInfo fi(path);
-
-	if(QFile::exists(path))
-		QFile::remove(path);
-
+	QFileInfo fi(filename);
 	if(!d.mkpath(fi.dir().path()))
-		return;
+		return false;
 
-	file = openFileForWrite(path);
-	if(!file)
-		return;
-	httpReq(requestedUrl);
+    if (!file.open(QIODevice::WriteOnly)) {
+        qDebug() << filename << "::" << file.errorString();
+        return false;
+    }
+
+    file.write(data->readAll());
+    file.close();
+
+    return true;
+}
+
+void MWin::downloadFinished(QNetworkReply *reply)
+{
+    QUrl url = reply->url();
+	QString filename = dwMap[reply];
+    if (reply->error()) {
+        qDebug() << reply->errorString();
+        return;
+    } else {
+        if (isHttpRedirect(reply)) {
+            fputs("Request was redirected.\n", stderr);
+        } else {
+
+            if (!saveToDisk(filename, reply)) {
+                return;
+            }
+        }
+    }
+	
+	dwMap.remove(reply);
+    currentDownloads.removeAll(reply);
+    reply->deleteLater();
+
+	ass++;
+
+	QString dwtext = "Downloaded ";
+
+	// if(!currFile.isEmpty()) dwtext += currFile;
+
+	changeProgressState(static_cast<int>(ass), static_cast<int>(assm), dwtext + QString::number(static_cast<int>(ass)) + "/" + QString::number(static_cast<int>(assm)));
+
+	if(currentDownloads.isEmpty()){
+		progressFinish();
+	}
+
+}
+
+bool MWin::isHttpRedirect(QNetworkReply *reply)
+{
+    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    return statusCode == 301 || statusCode == 302 || statusCode == 303
+           || statusCode == 305 || statusCode == 307 || statusCode == 308;
+}
+
+void MWin::dwF(QList<MLMaven*> files){
+	ass = 0;
+	assm = files.length();
+	if(files.isEmpty()) progressFinish();
+	for (QList<MLMaven*>::iterator it = files.begin(); it != files.end(); ++it) {
+        MLMaven* m = *it;
+        doDownload(m->uri, getfilepath(m->path));
+    }
 }
 
 // Check manifest file
@@ -983,16 +1198,17 @@ void MWin::purl(){
 	changeProgressState(0, "Getting version manifest...", false);
 	QString manpath = "yokaiLauncher_manifest.json";
 	dp("Getting version manifest...");
+	QList<MLMaven*> files;
 	if(!QFile::exists(getfilepath(manpath))){
 		progstate = PState::MANDOWN;
 		currFile = manpath;
 		dp("Downloading manifest...");
-		downloadFile(QUrl("https://vilafox.xyz/api/yokaiLauncher"), manpath);
+		files.append(new MLMaven(QUrl("https://vilafox.xyz/api/yokaiLauncher"), manpath));
+		dwF(files);
 	}else{	
 		progstate = PState::MANCHEKSUM;
 		progressFinish();
 	}
-
 
 }
 
@@ -1002,10 +1218,11 @@ void MWin::appshow(){
 	dp("UI loaded");
 
 	if(debug){
-		dcon = loadUiFile("dcon", ui_mw);
-		dcon->setWindowModality(Qt::NonModal);
-		dcon->setWindowFlags(Qt::Window);
-		dcon->show();
+		QWidget* w = new QWidget(ui_mw);
+		dcon = new Ui::Form();
+		dcon->setupUi(w);
+		w->setWindowFlags(Qt::Window);
+		w->show();
 	}
 
 	disableControls();
@@ -1018,9 +1235,10 @@ void MWin::loadconf()
 {
 	dp("\n======== yokaiLauncher ========");
 	dp("Init");
-	QString cpath = getfilepath("yokai.yml");
-	QDir d;
 	config = new CMan();
+	if(!config->settings.value("mcpath", "").toString().isEmpty()) Path.mcPath = config->settings.value("mcpath").toString();
+	QString cpath = Path.mcPath + "/yokai.yml";
+	QDir d;
 	config->load(cpath);
 	Path.mcPath = config->getVal("mcdir");
 	mcPathEdit->setText(Path.mcPath);
@@ -1073,6 +1291,30 @@ void MWin::loadconf()
 	nickname->setText(config->getVal("nickname"));
 	Qt::CheckState cs = ifc ? Qt::Checked : Qt::Unchecked;
 	fabricb->setCheckState(cs);
+
+	bool ifsc = QVariant(config->getVal("isFullscreen")).toBool();
+	isf->setCheckState(ifsc ? Qt::Checked : Qt::Unchecked);
+
+	jvma->setText(config->getVal("jvmargs"));
+
+	uint64_t mbRam = getSystemRam() / (1024ul * 1024ul);
+	rams->setMinimum(2048);
+	if(mbRam >= 4096){
+		config->setVal("ram", (int)mbRam/2);
+	}else{
+		rams->setMinimum(512);
+		config->setVal("ram", 2048);
+		msgBox("Warning: low RAM in your PC");
+	}
+	
+	rams->setMaximum(mbRam);
+	connect(rams, &QSlider::valueChanged, [=](int value){
+		cram->setText("Current RAM: " + QString::number(value) + "MB");
+	});
+
+	mml->setText(QString::number(mbRam/1024) + "GB");
+	cram->setText("Current RAM: " + QString::number(rams->value()) + "MB");
+
 	appshow();
 }
 
@@ -1081,7 +1323,7 @@ int main(int argc, char *argv[])
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 	QApplication app(argc, argv);
 	app.setApplicationName("yokaiLauncher");
-	app.setApplicationVersion("0.1.3"); // 0 - is beta
+	app.setApplicationVersion(QString::number(_VERSION)); // 0 - is beta
 	QCommandLineParser p;
 	p.addVersionOption();
 	QCommandLineOption isDebug(QStringList() << "d" << "debug");

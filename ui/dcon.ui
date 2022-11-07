@@ -3,7 +3,7 @@
  <class>Form</class>
  <widget class="QWidget" name="Form">
   <property name="windowModality">
-   <enum>Qt::WindowModal</enum>
+   <enum>Qt::NonModal</enum>
   </property>
   <property name="geometry">
    <rect>
@@ -19,6 +19,9 @@
   <property name="windowIcon">
    <iconset resource="../res.qrc">
     <normaloff>:/assets/icon.svg</normaloff>:/assets/icon.svg</iconset>
+  </property>
+  <property name="WindowFlags" stdset="0">
+   <cstring>0x00000001</cstring>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>

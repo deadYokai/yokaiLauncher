@@ -36,28 +36,17 @@
 #include <QFileDialog>
 #include <QPainter>
 
+#include <classes.h>
+
 QT_BEGIN_NAMESPACE
 class QFile;
 class CMan;
 class QNetworkReply;
 QT_END_NAMESPACE
 
-
-enum class PState {
-    INIT,
-    MANDOWN,
-    MANCHEKSUM,
-    VERMANDOWN,
-    ASSDOWN,
-    LIBDOWN,
-    READY2PLAY,
-    FabricDown,
-    JAVAIN
-};
-
-class MWin : public QMainWindow
+class MWin : public QMainWindow, Ui::MWin
 {
-    Q_OBJECT
+    // Q_OBJECT
 
 public:
     explicit MWin(QWidget *parent = nullptr);
@@ -71,14 +60,14 @@ public:
     QComboBox *vList;
     void purl();
     void httpReq(const QUrl &requestedUrl);
-    void downloadFile(const QUrl &requestedUrl, QString path);
-    void progress_func(qint64 bytesRead, qint64 totalBytes);
+    void downloadFile(const QUrl &requestedUrl, QString path); //to remove
+    void progress_func(qint64 bytesRead, qint64 totalBytes); //update
     void st();
-    void httpFinish();
-    void httpRead();
+    void httpFinish(); //to remove
+    void httpRead(); //to remove
     void manlistimport();
-    void progressFinish();
-    std::unique_ptr<QFile> openFileForWrite(const QString &fileName);
+    void progressFinish(); //to remove
+    std::unique_ptr<QFile> openFileForWrite(const QString &fileName); //to remove
     QString getfilepath(QString path);
     PState progstate;
     QString mansha;
@@ -96,8 +85,9 @@ public:
     qsizetype assm = 0;
     CMan *config;
     QString fabVer;
-    QString fabMclass;
-    QString fabLibs;
+    QString quiltVer;
+    QString MLMclass;
+    QString MLLibs;
     QStringList getJargs();
     void launch();
     void checkJava();
@@ -111,18 +101,36 @@ public:
     QPixmap _pixmapBg;
     void paintEvent(QPaintEvent *pe);
     bool checksha1(QString, QString);
+    QList<MLMaven*> dwList;
 
-private slots:
+    void doDownload(const QUrl &url, const QString &path);
+    void dwF(QList<MLMaven*> files);
+    QString Fpath;
+    bool saveToDisk(const QString &filename, QIODevice *data);
+    bool isHttpRedirect(QNetworkReply *reply);
+
+    void r2run();
+    void quiltpost();
+
+    void quiltDownload();
+    ModLoader cML;
+    QList<MLMaven*> getMavenData(QJsonArray ja);
+    
+
+public slots:
+    void downloadFinished(QNetworkReply *reply);
+    void sslErrors(const QList<QSslError> &errors);
     void verChanged(const QString &text);
     void mcend(int exitCode, QProcess::ExitStatus ExitStatus);
     void isFabricbox(int state);
     void rr();
     void re();
     void settbtn_click();
+    void pageBtnClick();
 
 private:
     void closeEvent(QCloseEvent *bar);
-    QWidget *dcon;
+    Ui::Form *dcon;
     QWidget *bwi;
     QWidget *uwi;
     QPushButton *playBtn;
@@ -136,17 +144,31 @@ private:
     QLabel *bid;
     QWidget *pWidget;
     QProgressBar *progressBar;
-    QNetworkAccessManager qnam;
-    QNetworkReply *reply;
+    QNetworkAccessManager qnam; //to remove
+    QNetworkReply *reply; //to remove
     QUrl url;
-    std::unique_ptr<QFile> file;
+    std::unique_ptr<QFile> file; //to remove
     QProcess *process;
     bool run = false;
-
+    Ui::MWin *ui;
     QWidget *settingsWidget;
     QPushButton *settsavebtn;
     QComboBox *themeBox;
     QPushButton *mcFolBtn;
     QLineEdit *mcPathEdit;
     QPushButton *mcPathSel;
+    QList<QNetworkReply*> dwFiles; //to remove
+
+    QNetworkAccessManager manager;
+    QList<QNetworkReply *> currentDownloads;
+    QString filepath;
+    QMap<QNetworkReply*, QString> dwMap;
+    
+    QCheckBox *isf;
+	QLineEdit *jvma;
+	QSlider *rams;
+	QLabel *mml;
+	QLabel *cram;
+    bool m = false; //to remove
 };
+

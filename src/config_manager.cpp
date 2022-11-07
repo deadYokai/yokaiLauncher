@@ -1,26 +1,39 @@
 #include <config_manager.h>
-#include <QFile>
+
 #include <QDir>
 #include <QTextStream>
 #include <QDebug>
 // #include <fstream>
-
+#include <QFileDialog>
 CMan::CMan(){}
 
 void CMan::load(QString pathtofile){
-    path = pathtofile.toUtf8().constData();
+    path = QDir::cleanPath(pathtofile);
 	if(!QFile::exists(pathtofile)){
-        QFile cfile(":/assets/defconf.yml");
-        cfile.open(QFile::ReadOnly | QFile::Text);
-		// std::cout << "Writing default config" << std::endl;
-		if(cfile.copy(pathtofile)){
-            QFile::setPermissions(pathtofile, QFileDevice::ReadOther | QFileDevice::WriteOther | QFileDevice::WriteGroup | QFileDevice::ReadGroup | QFileDevice::WriteUser | QFileDevice::ReadUser | QFileDevice::WriteOwner | QFileDevice::ReadOwner);
-            cfile.close();
-            config = YAML::LoadFile(path);
-            setVal("mcdir", QDir::homePath() + "/.yokai");
-        }
-	}else
-        config = YAML::LoadFile(path);
+        QFileDialog *dir = new QFileDialog();
+		dir->setFileMode(QFileDialog::Directory);
+		dir->setOption(QFileDialog::ShowDirsOnly);
+		dir->setViewMode(QFileDialog::List);
+		dir->setDirectory(path);
+		if(dir->exec()){
+			if(!dir->selectedFiles()[0].isEmpty()){
+                path = QDir::cleanPath(dir->selectedFiles()[0] + "/yokai.yml");
+                settings.setValue("mcpath", QDir::cleanPath(dir->selectedFiles()[0]));
+                QFile cfile(":/assets/defconf.yml");
+                cfile.open(QFile::ReadOnly | QFile::Text);
+                // std::cout << "Writing default config" << std::endl;
+                if(cfile.copy(path)){
+                    QFile::setPermissions(path, QFileDevice::ReadOther | QFileDevice::WriteOther | QFileDevice::WriteGroup | QFileDevice::ReadGroup | QFileDevice::WriteUser | QFileDevice::ReadUser | QFileDevice::WriteOwner | QFileDevice::ReadOwner);
+                    cfile.close();
+                    config = YAML::LoadFile(path.toUtf8().constData());
+                    Path.mcPath = QDir::cleanPath(dir->selectedFiles()[0]);
+                    setVal("mcdir", QDir::cleanPath(dir->selectedFiles()[0]));
+                }
+			}
+		}
+	}else{
+        config = YAML::LoadFile(path.toUtf8().constData());
+    }
 }
 
 QString CMan::getVal(QString valname){
@@ -53,7 +66,7 @@ void CMan::saveConf(){
         conf.append(key + ": \"" + val + "\"\n  ");
     }
 
-    QFile outf(QString::fromStdString(path));
+    QFile outf(path);
     outf.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream qts(&outf);
     qts << conf;
