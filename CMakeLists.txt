@@ -37,7 +37,7 @@ string(TIMESTAMP NOW "+%y%m%d%H%M%S")
 
 target_compile_definitions(yokaiLauncher PRIVATE
     BUILDID=${NOW}
-    _VERSION="${VER}"
+    _VERSION=${VER}
 )
 
 target_link_libraries(yokaiLauncher PRIVATE

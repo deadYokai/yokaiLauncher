@@ -607,7 +607,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="settings_page">
        <property name="sizePolicy">
@@ -1015,7 +1015,7 @@ ________________</string>
       <widget class="QWidget" name="modLoader_page">
        <layout class="QVBoxLayout" name="verticalLayout_11">
         <item>
-         <widget class="QWidget" name="verticalWidget" native="true">
+         <widget class="QWidget" name="MLW" native="true">
           <layout class="QVBoxLayout" name="verticalLayout_9">
            <item>
             <widget class="QLabel" name="label_3">
@@ -1035,6 +1035,9 @@ ________________</string>
              </property>
              <property name="checked">
               <bool>true</bool>
+             </property>
+             <property name="mlt" stdset="0">
+              <string>None</string>
              </property>
             </widget>
            </item>
@@ -1056,6 +1059,9 @@ ________________</string>
              <property name="checked">
               <bool>false</bool>
              </property>
+             <property name="mlt" stdset="0">
+              <string>Quilt</string>
+             </property>
             </widget>
            </item>
            <item>
@@ -1073,6 +1079,9 @@ ________________</string>
                <height>64</height>
               </size>
              </property>
+             <property name="mlt" stdset="0">
+              <string>Fabric</string>
+             </property>
             </widget>
            </item>
            <item>
@@ -1089,6 +1098,9 @@ ________________</string>
                <width>64</width>
                <height>64</height>
               </size>
+             </property>
+             <property name="mlt" stdset="0">
+              <string>None</string>
              </property>
             </widget>
            </item>

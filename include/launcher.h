@@ -111,6 +111,7 @@ public:
 
     void r2run();
     void quiltpost();
+    void fabpost();
 
     void quiltDownload();
     ModLoader cML;
@@ -122,7 +123,7 @@ public slots:
     void sslErrors(const QList<QSslError> &errors);
     void verChanged(const QString &text);
     void mcend(int exitCode, QProcess::ExitStatus ExitStatus);
-    void isFabricbox(int state);
+    void mlChanged(bool state);
     void rr();
     void re();
     void settbtn_click();

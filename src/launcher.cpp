@@ -63,12 +63,6 @@ void MWin::verChanged(const QString &text){
 	config->setVal("lastver", text);
 }
 
-void MWin::isFabricbox(int state){
-	if(state == Qt::Checked)
-		config->setVal("isFabric", true);
-	else
-		config->setVal("isFabric", false);
-}
 
 // Find RAM
 uint64_t getSystemRam()
@@ -117,7 +111,6 @@ void MWin::disableControls(bool a = true){
 	nickname->setEnabled(val);
 	vList->setEnabled(val);
 	playBtn->setEnabled(val);
-	fabricb->setEnabled(val);
 }
 
 // Custom MessageBox
@@ -158,7 +151,6 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MWin)
 	pLabel = ui->pLabel;
 	progressBar = ui->progressBar;
 	playBtn = ui->playBtn;
-	fabricb = ui->fabricb;
 	
 	themeBox = ui->themesBox;
 	mcPathEdit = ui->mcPathEdit;
@@ -187,7 +179,6 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MWin)
 	cram = ui->currRam;
 
 	connect(vList, &QComboBox::currentTextChanged, this, &MWin::verChanged);
-	connect(fabricb, &QCheckBox::stateChanged, this, &MWin::isFabricbox);
 
 	connect(mcFolBtn, &QPushButton::clicked, this, [=](){ QDesktopServices::openUrl(QUrl("file:///"+config->getVal("mcdir"), QUrl::TolerantMode)); });
 	connect(playBtn, &QPushButton::clicked, this, [=](){
@@ -254,8 +245,26 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MWin)
 	connect(&manager, &QNetworkAccessManager::finished,
             this, &MWin::downloadFinished);
 
+	QList<QRadioButton*> list = ui->MLW->findChildren<QRadioButton*>();
+	
+    for(int i=0;i<list.size();i++)
+    {
+        QRadioButton* rb = list.at(i);
+		connect(rb, &QRadioButton::toggled, this, &MWin::mlChanged);
+    }
+
+
 }
 
+void MWin::mlChanged(bool state){
+	QObject* rb = sender();
+	if(state){
+		if(rb->property("mlt").toString() == "Quilt") cML = ModLoader::Quilt;
+		else if(rb->property("mlt").toString() == "Fabric") cML = ModLoader::Fabric;
+		else if(rb->property("mlt").toString() == "Forge") cML = ModLoader::Forge;
+		else cML = ModLoader::None;
+	}
+}
 
 void MWin::pageBtnClick(){
 	int index = sender()->property("menuPage").toInt();
@@ -530,6 +539,7 @@ void MWin::fabricDownload(){
 	QString fp = ".fabric/fabric-loader-"+fabVer;
 	QString path = fp +".json";
 	QString fab = fabricMaven+fabricMavenDir+fabVer+"/fabric-loader-"+fabVer;
+	QList<MLMaven*> files;
 	progstate = PState::MLDown;
 	if(!QFile::exists(getfilepath(path))){
 		QFileInfo fi(getfilepath(path));
@@ -540,16 +550,31 @@ void MWin::fabricDownload(){
 		{
 			dir.remove(dirFile);
 		}
-		// downloadFile(fab+".json", path);
-		return;
+		files.append(new MLMaven(fab+".json", path));
 	}
-
+	
 	if(!QFile::exists(getfilepath(fp+".jar"))){
 		currFile = getfilepath(fp+".jar");
-		// downloadFile(fab+".jar", fp+".jar");
-		return;
+		files.append(new MLMaven(fab+".jar", fp+".jar"));
 	}
 
+	QString qpath = fabricMcMavenDir + "/intermediary/" + currmanj["id"].toString() + "/intermediary-" + currmanj["id"].toString() + "-v2.jar";
+	QString libPath = Path.libsPath + qpath;
+
+	if(!QFile::exists(getfilepath(libPath))){
+		currFile = getfilepath(libPath);
+		files.append(new MLMaven(fabricMaven + qpath, libPath));
+	}
+
+	progstate = PState::FabricPostDownload;
+	dwF(files);
+
+}
+
+void MWin::fabpost(){
+	QString fp = ".fabric/fabric-loader-"+fabVer;
+	QString path = fp +".json";
+	QList<MLMaven*> files;
 	QFile f(getfilepath(path));
 	if (!f.open(QFile::ReadOnly | QFile::Text)) return;
 	QTextStream in(&f);
@@ -561,38 +586,17 @@ void MWin::fabricDownload(){
 	#ifdef Q_OS_WIN
 	paths = ";";
 	#endif
-	for(QJsonArray::iterator it = ja.begin(); it != ja.end(); ++it){
-		QJsonValue a = *it;
-		QJsonObject jo = a.toObject();
-		QStringList libMaven = jo["name"].toString().split(":");
-		QString apath = libMaven[0].replace(".", "/");
-		QString name = libMaven[1];
-		QString ver = libMaven[2];
-		QString qpath = apath + "/" + name + "/" + ver + "/" + name + "-" + ver + ".jar";
-		QString libPath = Path.libsPath + qpath;
-		MLLibs.append(getfilepath(libPath)+paths);
-		QUrl libUrl = QUrl(fabricMaven + qpath);
-		currFile = libPath;
-		if(!QFile::exists(getfilepath(libPath))){
-			// downloadFile(libUrl, libPath);
-			return;
-		}
-	}
-	
 
+	files = getMavenData(ja);
+
+	QString fabricMcMavenDir = "net/fabricmc/";
 	QString qpath = fabricMcMavenDir + "/intermediary/" + currmanj["id"].toString() + "/intermediary-" + currmanj["id"].toString() + "-v2.jar";
 	QString libPath = Path.libsPath + qpath;
 
-	if(!QFile::exists(getfilepath(libPath))){
-		currFile = getfilepath(libPath);
-		// downloadFile(fabricMaven + qpath, libPath);
-		return;
-	}
-
-	dp("Fabric enabled");
 	MLLibs.append(getfilepath(libPath)+paths);
 	MLLibs.append(getfilepath(fp + ".jar")+paths);
-	checkJava();
+	progstate = PState::READY2PLAY;
+	dwF(files);
 }
 
 // Check Java and Downloads
@@ -872,6 +876,7 @@ void MWin::manlistimport(){
 
 void MWin::r2run(){
 	dp("Ready to play");
+	MLLibs = "";
 	progstate = PState::INIT;
 	if(isWhiteSpace(nickname->text())){
 		dp("Warn: spaces in nickname");
@@ -885,15 +890,18 @@ void MWin::r2run(){
 		disableControls(false);
 		return;
 	}
-	cML = ModLoader::Quilt;
+	
 	switch(cML){
 		case ModLoader::Fabric:
+			qDebug() << "Selected modloader: Fabric";
 			fabricDownload();
 			break;
 		case ModLoader::Quilt:
+			qDebug() << "Selected modloader: Quilt";
 			quiltDownload();
 			break;
 		default:
+			progstate = PState::READY2PLAY;
 			checkJava();
 	}
 }
@@ -1059,6 +1067,9 @@ void MWin::progressFinish(){
 			break;
 		case PState::QuiltPostDownload:
 			quiltpost();
+			break;
+		case PState::FabricPostDownload:
+			fabpost();
 			break;
 		case PState::MLDown:
 			switch(cML){
@@ -1289,8 +1300,8 @@ void MWin::loadconf()
 	}
 
 	nickname->setText(config->getVal("nickname"));
-	Qt::CheckState cs = ifc ? Qt::Checked : Qt::Unchecked;
-	fabricb->setCheckState(cs);
+	// Qt::CheckState cs = ifc ? Qt::Checked : Qt::Unchecked;
+	// fabricb->setCheckState(cs);
 
 	bool ifsc = QVariant(config->getVal("isFullscreen")).toBool();
 	isf->setCheckState(ifsc ? Qt::Checked : Qt::Unchecked);
