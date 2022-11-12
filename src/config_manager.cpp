@@ -8,8 +8,8 @@
 CMan::CMan(){}
 
 void CMan::load(QString pathtofile){
-    path = QDir::cleanPath(pathtofile);
-	if(!QFile::exists(pathtofile)){
+    path = QDir::toNativeSeparators(QDir::cleanPath(pathtofile));
+	if(!QFile::exists(QDir::toNativeSeparators(pathtofile))){
         QFileDialog *dir = new QFileDialog();
 		dir->setFileMode(QFileDialog::Directory);
 		dir->setOption(QFileDialog::ShowDirsOnly);
@@ -17,8 +17,8 @@ void CMan::load(QString pathtofile){
 		dir->setDirectory(path);
 		if(dir->exec()){
 			if(!dir->selectedFiles()[0].isEmpty()){
-                path = QDir::cleanPath(dir->selectedFiles()[0] + "/yokai.yml");
-                settings.setValue("mcpath", QDir::cleanPath(dir->selectedFiles()[0]));
+                path = QDir::toNativeSeparators(QDir::cleanPath(dir->selectedFiles()[0] + "/yokai.yml"));
+                settings.setValue("mcpath", QDir::toNativeSeparators(QDir::cleanPath(dir->selectedFiles()[0])));
                 QFile cfile(":/assets/defconf.yml");
                 cfile.open(QFile::ReadOnly | QFile::Text);
                 // std::cout << "Writing default config" << std::endl;
@@ -26,8 +26,7 @@ void CMan::load(QString pathtofile){
                     QFile::setPermissions(path, QFileDevice::ReadOther | QFileDevice::WriteOther | QFileDevice::WriteGroup | QFileDevice::ReadGroup | QFileDevice::WriteUser | QFileDevice::ReadUser | QFileDevice::WriteOwner | QFileDevice::ReadOwner);
                     cfile.close();
                     config = YAML::LoadFile(path.toUtf8().constData());
-                    Path.mcPath = QDir::cleanPath(dir->selectedFiles()[0]);
-                    setVal("mcdir", QDir::cleanPath(dir->selectedFiles()[0]));
+                    setVal("mcdir", QDir::toNativeSeparators(QDir::cleanPath(dir->selectedFiles()[0])));
                 }
 			}
 		}
@@ -48,7 +47,11 @@ QString CMan::getVal(QString valname){
             cfil.open(QFile::ReadOnly | QFile::Text);
             cfil.copy(".tmpdef.yml");
             YAML::Node n = YAML::LoadFile(".tmpdef.yml");
-            out = n["yokaiLauncher"][valname.toUtf8().constData()].as<QString>();
+            try{
+                out = n["yokaiLauncher"][valname.toUtf8().constData()].as<QString>();
+            }catch(const std::exception& e){
+                out = "0";
+            }
             cfil.close();
             QFile::remove(".tmpdef.yml");
         }
@@ -66,10 +69,10 @@ void CMan::saveConf(){
         conf.append(key + ": \"" + val + "\"\n  ");
     }
 
-    QFile outf(path);
+    QFile outf(QDir::toNativeSeparators(path));
     outf.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream qts(&outf);
-    qts << conf;
+    qts << conf.replace("\\", "\\\\");
     outf.close();
 }
 

@@ -23,7 +23,6 @@ set(UIC_UI_FILES
 
 set(SOURCES 
     src/config_manager.cpp
-    src/dirdialog.cpp
     src/melement.cpp
     src/launcher.cpp
 )

@@ -8,6 +8,6 @@ yokaiLauncher:
   isFullscreen: false
   jvmargs: ""
   nickname: ""
-  isFabric: false
+  modloader: 0
   theme: ""
   

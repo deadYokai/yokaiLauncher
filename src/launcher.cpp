@@ -10,7 +10,6 @@
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
-#include <dirdialog.h>
 
 // Custom debug outputs (idk why i'm need this)
 void dp(QString a){	qDebug() << a;}
@@ -95,17 +94,6 @@ uint64_t getSystemRam()
 #endif
 }
 
-
-// Settings Button event
-void MWin::settbtn_click(){
-
-
-	// pWidget->hide();
-	// mwCW->hide();
-	// bwi->hide();
-	// uwi->show();
-}
-
 void MWin::disableControls(bool a = true){
 	bool val = !a;
 	nickname->setEnabled(val);
@@ -156,21 +144,26 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MWin)
 	mcPathEdit = ui->mcPathEdit;
 	mcPathSel = ui->mcPathSelect;
 	mcFolBtn = ui->mcFolderBtn;
-
-	bid = new QLabel(ui_mw);
-	bid->setStyleSheet("font-size: 14px");
-	bid->setGeometry(8, 8, 1000, 32);
 	settsavebtn = ui->settsaveb;
+
+	bid = ui->buildId;
+	bid->setStyleSheet("font-size: 14px");
 	bid->setText("Build #" + QString::number(BUILDID));
 
 	ui->verLab->setText(QString::number(_VERSION));
 
 	ui->stackedWidget->setMaximumWidth(0);
 
-	connect(ui->settb, &QPushButton::clicked, this, &MWin::pageBtnClick);
+	connect(ui->settb, &QToolButton::clicked, this, &MWin::pageBtnClick);
+
 	connect(ui->modsBtn, &QPushButton::clicked, this, &MWin::pageBtnClick);
 	connect(ui->modpackBtn, &QPushButton::clicked, this, &MWin::pageBtnClick);
-	connect(ui->modloaderBtn, &QPushButton::clicked, this, &MWin::pageBtnClick);
+	connect(ui->modloaderBtn, &QToolButton::clicked, this, &MWin::pageBtnClick);
+
+	if(!debug){
+		ui->modpackBtn->hide();
+		ui->modsBtn->hide();
+	}
 
 	isf = ui->isMcFullscreen;
 	jvma = ui->jvmaddargs;
@@ -210,13 +203,6 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MWin)
 				mcPathEdit->setText(dir->selectedFiles()[0]);
 			}
 		}
-		// TODO
-		// ChooseDirDialog *cd = new ChooseDirDialog(ui_mw);
-		// cd->open(Path.mcPath);
-		// QString path = cd->getPathStr();
-		// if(!path.isEmpty()){
-		// 	mcPathEdit->setText(path);
-		// }
 	 });
 	connect(settsavebtn, &QPushButton::clicked, this, [=](){
 		if(themeBox->currentIndex() > 0){
@@ -245,13 +231,7 @@ MWin::MWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MWin)
 	connect(&manager, &QNetworkAccessManager::finished,
             this, &MWin::downloadFinished);
 
-	QList<QRadioButton*> list = ui->MLW->findChildren<QRadioButton*>();
 	
-    for(int i=0;i<list.size();i++)
-    {
-        QRadioButton* rb = list.at(i);
-		connect(rb, &QRadioButton::toggled, this, &MWin::mlChanged);
-    }
 
 
 }
@@ -263,8 +243,10 @@ void MWin::mlChanged(bool state){
 		else if(rb->property("mlt").toString() == "Fabric") cML = ModLoader::Fabric;
 		else if(rb->property("mlt").toString() == "Forge") cML = ModLoader::Forge;
 		else cML = ModLoader::None;
+		config->setVal("modloader", static_cast<int>(cML));
 	}
 }
+
 
 void MWin::pageBtnClick(){
 	int index = sender()->property("menuPage").toInt();
@@ -297,7 +279,6 @@ void MWin::paintEvent(QPaintEvent *pe)
 		auto newHeight = (int)(winSize.width() / pixmapRatio);
 		painter.drawPixmap(0, 0, winSize.width(), newHeight, _pixmapBg);
 	}
-
 
 }
 
@@ -412,15 +393,30 @@ QStringList MWin::getJargs(){
 		}else
 			libs.append(libPath + paths);
 	}
-	
-	if(cML != ModLoader::None) libs.append(MLLibs);
+	QString isml = "";
+	if(cML != ModLoader::None){
+		libs.append(MLLibs);
+		switch(cML){
+			case ModLoader::Quilt:
+				isml = "Quilt";
+				break;
+			case ModLoader::Fabric:
+				isml = "Fabric";
+				break;
+			case ModLoader::Forge:
+				isml = "Forge";
+				break;
+			default:
+				break;
+		}
+	}
 	
 	args.append(" " + libs + getfilepath(Path.verPath+ver+"/"+ver+".jar"));
 	args.append(" " + mainclass);
 
 	args.append(" --username " + nickname->text());
 	args.append(" --version " + ver);
-	args.append(" --gameDir " + Path.mcPath);
+	args.append(" --gameDir " + getfilepath("gameVersions/"+ver+isml));
 	args.append(" --assetsDir " + getfilepath(Path.assPath));
 	args.append(" --assetIndex " + assetsver);
 	args.append(" --uuid " + QUuid::createUuidV3(QUuid(), nickname->text()).toString().replace("{", "").replace("}", ""));
@@ -613,55 +609,52 @@ void MWin::checkJava(){
 	#endif
 	progstate = PState::JAVAIN;
 
+	QString runtimever = currmanj["javaVersion"].toObject()["component"].toString();
 	if(!QFile::exists(getfilepath("java/all.json"))){
 		currFile = getfilepath("java/all.json");
-		// downloadFile(jmanifest, "java/all.json");
-		files.append(new MLMaven(jmanifest, getfilepath("java/all.json")));
-		dwF(files);
+		files.append(new MLMaven(jmanifest, "java/all.json"));
 
-		return;
-	}
-	
-	
-	QString runtimever = currmanj["javaVersion"].toObject()["component"].toString();
-	if(!QFile::exists(getfilepath("java/"+runtimever+"/windows-"+winp+".json"))){
-		currFile = getfilepath("java/"+runtimever+"/windows-"+winp+".json");
-		QFile f(getfilepath("java/all.json"));
-		if (!f.open(QFile::ReadOnly | QFile::Text)) return;
-		QTextStream in(&f);
-		QString str = in.readAll();
-		QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
-		QUrl runtimeurl = QUrl(jsonResponse.object()["windows-"+winp].toObject()[runtimever].toArray()[0].toObject()["manifest"].toObject()["url"].toString());
-		// downloadFile(runtimeurl, "java/"+runtimever+"/windows-"+winp+".json");
+	}else{
+		if(!QFile::exists(getfilepath("java/"+runtimever+"/windows-"+winp+".json"))){
+			currFile = getfilepath("java/"+runtimever+"/windows-"+winp+".json");
+			QFile f(getfilepath("java/all.json"));
+			if (!f.open(QFile::ReadOnly | QFile::Text)) return;
+			QTextStream in(&f);
+			QString str = in.readAll();
+			QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
+			QUrl runtimeurl = QUrl(jsonResponse.object()["windows-"+winp].toObject()[runtimever].toArray()[0].toObject()["manifest"].toObject()["url"].toString());
 
-		files.append(new MLMaven(runtimeurl, "java/"+runtimever+"/windows-"+winp+".json"));
-		dwF(files);
-		f.close();
-		return;
-	}
+			files.append(new MLMaven(runtimeurl, "java/"+runtimever+"/windows-"+winp+".json"));
+			f.close();
+		}else{
+			QFile f(getfilepath("java/"+runtimever+"/windows-"+winp+".json"));
+			if (!f.open(QFile::ReadOnly | QFile::Text)) return;
+			QTextStream in(&f);
+			QString str = in.readAll();
+			QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
+			QJsonObject jfiles = jsonResponse.object()["files"].toObject();
+			QStringList keys = jfiles.keys();
+			for (QStringList::iterator it = keys.begin(); it != keys.end(); ++it) {
+				QString b = *it;
+				QJsonObject a = jfiles[b].toObject();
+				QString j = "java/"+runtimever+"/windows-"+winp+"/"+b;
+				if(a["type"] == "file"){
+					if(!QFile::exists(getfilepath(j))){
+						QUrl uri = QUrl(a["downloads"].toObject()["raw"].toObject()["url"].toString());
+						currFile = getfilepath(j);
 
-	QFile f(getfilepath("java/"+runtimever+"/windows-"+winp+".json"));
-	if (!f.open(QFile::ReadOnly | QFile::Text)) return;
-	QTextStream in(&f);
-	QString str = in.readAll();
-	QJsonDocument jsonResponse = QJsonDocument::fromJson(str.toUtf8());
-	QJsonObject jfiles = jsonResponse.object()["files"].toObject();
-	QStringList keys = jfiles.keys();
-	for (QStringList::iterator it = keys.begin(); it != keys.end(); ++it) {
-		QString b = *it;
-		QJsonObject a = jfiles[b].toObject();
-		if(a["type"] == "file"){
-			if(!QFile::exists(getfilepath("java/"+runtimever+"/windows-"+winp+"/"+b))){
-				QUrl uri = QUrl(a["downloads"].toObject()["raw"].toObject()["url"].toString());
-				currFile = getfilepath("java/"+runtimever+"/windows-"+winp+"/"+b);
-				// downloadFile(uri, "java/"+runtimever+"/windows-"+winp+"/"+b);
-				
-				files.append(new MLMaven(uri, "java/"+runtimever+"/windows-"+winp+"/"+b));
-				dwF(files);
-				return;
+						files.append(new MLMaven(uri, j));
+						
+					}
+				}
 			}
 		}
-	}	
+	}
+	
+	if(!files.isEmpty()) {
+		dwF(files);
+		return;
+	}
 
 	javaRuntimeDir = getfilepath("java/"+runtimever+"/windows-"+winp+"/");
 
@@ -751,89 +744,11 @@ QString MWin::getfilepath(QString path){
 	return path;
 }
 
-void MWin::httpRead(){
-	if(file)
-		file->write(reply->readAll());
-}
-
 void MWin::getCheckSum(){
-	mansha = reply->readAll();
+	mansha = httprep->readAll();
 	if(progstate == PState::MANCHEKSUM)
 		manlistimport();
-}
-
-// After http request
-void MWin::httpFinish(){
-	QFileInfo fi;
-	if(progstate != PState::MANCHEKSUM){
-
-		if (file) {
-			fi.setFile(file->fileName());
-			file->close();
-			file.reset();
-		}
-		if (reply->error()) {
-			if(reply->error() == QNetworkReply::ContentNotFoundError && progstate == PState::MLDown){
-				msgBox("Fabric not supported in version: "+currmanj["id"].toString());
-				progstate = PState::INIT;
-				progressFinish();
-			}
-			QFile::remove(fi.absoluteFilePath());
-			qDebug() << QString("Download failed:\n%1.").arg(reply->errorString());
-			
-			reply->deleteLater();
-			reply = nullptr;
-			return;
-		}
-
-	}
-	const QVariant redirectionTarget = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
-
-	dwFiles.removeAll(reply);
-	reply->deleteLater();
-	reply = nullptr;
-
-	if (!redirectionTarget.isNull()) {
-        const QUrl redirectedUrl = url.resolved(redirectionTarget.toUrl());
-		if(progstate != PState::MANCHEKSUM){
-			file = openFileForWrite(fi.absoluteFilePath());
-			if (!file) {
-				return;
-			}
-		}
-        httpReq(redirectedUrl);
-        return;
-    }	
-	progressFinish();
-}
-
-std::unique_ptr<QFile> MWin::openFileForWrite(const QString &fileName){
-
-	std::unique_ptr<QFile> file(new QFile(fileName));
-	if (!file->open(QIODevice::WriteOnly)) {
-        qDebug() << QString("Unable to save the file %1: %2.").arg(QDir::toNativeSeparators(fileName), file->errorString());
-        return nullptr;
-    }
-    return file;
-
-}
-
-void MWin::progress_func(qint64 bytesRead, qint64 totalBytes)
-{
-	if(assm != 0){
-		changeProgressState(static_cast<int>(ass), static_cast<int>(assm), "Downloading assets " + QString::number(static_cast<int>(ass)) + "/" + QString::number(static_cast<int>(assm)));
-	}else{
-		if(currFile != nullptr){
-			QFileInfo fi(currFile);
-			QString s = "Downloading: ";
-			if(progstate == PState::JAVAIN){
-				s = "Installing java: ";
-			}
-			changeProgressState((int)bytesRead, (int)totalBytes, s + fi.fileName());
-		}
-		else
-			changeProgressState((int)bytesRead, (int)totalBytes, QString::number((int)bytesRead)+"/"+QString::number((int)totalBytes));
-	}
+	delete httprep;
 }
 
 // Load main manifest
@@ -1096,17 +1011,9 @@ void MWin::progressFinish(){
 void MWin::httpReq(const QUrl &requestedUrl) {
 	QNetworkRequest r(requestedUrl);
 	r.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
-	reply = qnam.get(r);
-	if(progstate != PState::MANCHEKSUM){
-		if(!m){
-			connect(reply, &QIODevice::readyRead, this, &MWin::httpRead);
-			connect(reply, &QNetworkReply::downloadProgress, this, &MWin::progress_func);
-		}
-		connect(reply, &QNetworkReply::finished, this, &MWin::httpFinish);
-	}else{
-		connect(reply, &QIODevice::readyRead, this, &MWin::getCheckSum);
-	}
-
+    QNetworkReply *reply = manager.get(r);
+	httprep = reply;
+	connect(reply, &QIODevice::readyRead, this, &MWin::getCheckSum);
 }
 
 void MWin::doDownload(const QUrl &url, const QString &path = nullptr)
@@ -1182,6 +1089,7 @@ void MWin::downloadFinished(QNetworkReply *reply)
 	changeProgressState(static_cast<int>(ass), static_cast<int>(assm), dwtext + QString::number(static_cast<int>(ass)) + "/" + QString::number(static_cast<int>(assm)));
 
 	if(currentDownloads.isEmpty()){
+		changeProgressState(0, "Loading...", false);
 		progressFinish();
 	}
 
@@ -1217,6 +1125,7 @@ void MWin::purl(){
 		files.append(new MLMaven(QUrl("https://vilafox.xyz/api/yokaiLauncher"), manpath));
 		dwF(files);
 	}else{	
+		changeProgressState(0, "Loading...", false);
 		progstate = PState::MANCHEKSUM;
 		progressFinish();
 	}
@@ -1247,14 +1156,43 @@ void MWin::loadconf()
 	dp("\n======== yokaiLauncher ========");
 	dp("Init");
 	config = new CMan();
-	if(!config->settings.value("mcpath", "").toString().isEmpty()) Path.mcPath = config->settings.value("mcpath").toString();
-	QString cpath = Path.mcPath + "/yokai.yml";
+	if(!config->settings.value("mcpath", "").toString().isEmpty()) Path.mcPath = QDir::toNativeSeparators(config->settings.value("mcpath").toString());
+	QString cpath = QDir::toNativeSeparators(Path.mcPath + "/yokai.yml");
 	QDir d;
 	config->load(cpath);
-	Path.mcPath = config->getVal("mcdir");
-	mcPathEdit->setText(Path.mcPath);
+	Path.mcPath = QDir::toNativeSeparators(config->getVal("mcdir"));
 	bool ism = QVariant(config->getVal("maximized")).toBool();
-	bool ifc = QVariant(config->getVal("isFabric")).toBool();
+	cML = static_cast<ModLoader>(QVariant(config->getVal("modloader")).toInt());
+	QList<QRadioButton*> list = ui->MLW->findChildren<QRadioButton*>();
+	
+    for(int i=0;i<list.size();i++)
+    {
+		QString ml = "None";
+		switch(cML){
+			case ModLoader::Quilt:
+				ml = "Quilt";
+				break;
+			case ModLoader::Fabric:
+				ml = "Fabric";
+				break;
+			case ModLoader::Forge:
+				ml = "Forge";
+				break;
+			default:
+				break;
+		}
+        QRadioButton* rb = list.at(i);
+		if(rb->property("mlt").toString() == ml){
+			if(ml == "None" && rb->objectName() != "rNone")
+				rb->setChecked(false);
+			else
+				rb->setChecked(true);
+		}else{
+			rb->setChecked(false);
+		}
+		connect(rb, &QRadioButton::toggled, this, &MWin::mlChanged);
+    }
+	
 	if(!debug){
 		try{
 			debug = QVariant(config->getVal("_debug")).toBool();
@@ -1274,6 +1212,7 @@ void MWin::loadconf()
 		resize(config->getVal("width").toInt(), config->getVal("height").toInt());
 	}
 	
+	mcPathEdit->setText(Path.mcPath);
 	d.mkpath(getfilepath("themes/"));
 	
 	QDir *tpath = new QDir(getfilepath("themes"));
@@ -1300,8 +1239,6 @@ void MWin::loadconf()
 	}
 
 	nickname->setText(config->getVal("nickname"));
-	// Qt::CheckState cs = ifc ? Qt::Checked : Qt::Unchecked;
-	// fabricb->setCheckState(cs);
 
 	bool ifsc = QVariant(config->getVal("isFullscreen")).toBool();
 	isf->setCheckState(ifsc ? Qt::Checked : Qt::Unchecked);
@@ -1334,6 +1271,7 @@ int main(int argc, char *argv[])
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 	QApplication app(argc, argv);
 	app.setApplicationName("yokaiLauncher");
+	app.setOrganizationName("Vilafox");
 	app.setApplicationVersion(QString::number(_VERSION)); // 0 - is beta
 	QCommandLineParser p;
 	p.addVersionOption();

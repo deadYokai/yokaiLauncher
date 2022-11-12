@@ -60,18 +60,12 @@ public:
     QComboBox *vList;
     void purl();
     void httpReq(const QUrl &requestedUrl);
-    void downloadFile(const QUrl &requestedUrl, QString path); //to remove
-    void progress_func(qint64 bytesRead, qint64 totalBytes); //update
     void st();
-    void httpFinish(); //to remove
-    void httpRead(); //to remove
     void manlistimport();
-    void progressFinish(); //to remove
-    std::unique_ptr<QFile> openFileForWrite(const QString &fileName); //to remove
+    void progressFinish();
     QString getfilepath(QString path);
     PState progstate;
-    QString mansha;
-    void getCheckSum();    
+    QString mansha;  
     QMap<QString, QString> vData;
     void loadconf();
     void vermandown();
@@ -119,6 +113,7 @@ public:
     
 
 public slots:
+    void getCheckSum();
     void downloadFinished(QNetworkReply *reply);
     void sslErrors(const QList<QSslError> &errors);
     void verChanged(const QString &text);
@@ -126,7 +121,6 @@ public slots:
     void mlChanged(bool state);
     void rr();
     void re();
-    void settbtn_click();
     void pageBtnClick();
 
 private:
@@ -145,10 +139,7 @@ private:
     QLabel *bid;
     QWidget *pWidget;
     QProgressBar *progressBar;
-    QNetworkAccessManager qnam; //to remove
-    QNetworkReply *reply; //to remove
     QUrl url;
-    std::unique_ptr<QFile> file; //to remove
     QProcess *process;
     bool run = false;
     Ui::MWin *ui;
@@ -158,8 +149,8 @@ private:
     QPushButton *mcFolBtn;
     QLineEdit *mcPathEdit;
     QPushButton *mcPathSel;
-    QList<QNetworkReply*> dwFiles; //to remove
 
+    QNetworkReply* httprep;
     QNetworkAccessManager manager;
     QList<QNetworkReply *> currentDownloads;
     QString filepath;
@@ -170,6 +161,5 @@ private:
 	QSlider *rams;
 	QLabel *mml;
 	QLabel *cram;
-    bool m = false; //to remove
 };
 

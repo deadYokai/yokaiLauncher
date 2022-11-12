@@ -35,13 +35,25 @@
 	background: #111;
 }
 
-#rightWidget, #rightWidget QPushButton{
+#MLW QRadioButton{ font-size: 24px } 
+#MLW QRadioButton::hover{ background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgba(236, 163, 46, 163), stop:1 rgba(0,0,0,0) ) }
+#MLW QRadioButton::checked{ background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgba(236, 163, 46, 255), stop:1 rgba(0,0,0,0) ) }
+#MLW QRadioButton::indicator{ width: 0 }
+
+#rightWidget, #rightWidget QPushButton, #rightWidget QToolButton{
 	background: #333;
+	border: none;
 }
 
-#rightWidget QPushButton:hover{
+#rightWidget QPushButton:hover, #rightWidget QToolButton:hover{
+	background: #222;
+	border: none;
+}
+
+#rightWidget QPushButton:pressed{
 	background: #222;
 }
+
 
 #stackedWidget{
 	background: #222;
@@ -109,7 +121,7 @@ QCheckBox::indicator:checked{
 QComboBox{
 	font-family: eUkraineThin !important;
 	color: #fff;
-	background: transparent;
+	background: rgba(0,0,0,.3);
 	border: 2px solid #fff;
 	padding: 2px;
 	height: 28px;
@@ -190,7 +202,7 @@ QLineEdit, #jvmaddargs{
 	width: 100%;
 	border-radius: 0px;
 	border: 2px solid #fff;
-	background: transparent;
+	background: rgba(0,0,0,.3);
 	outline: none;
 	font-size: 18px;
 	color: #fff;
@@ -198,7 +210,7 @@ QLineEdit, #jvmaddargs{
 
 QLineEdit:focus, #jvmaddargs{
 	border-color: #fff;
-	background: rgba(255,255,255,.2);
+	background: rgba(0,0,0,.4);
 }
 
 QLineEdit::placeholder, #jvmaddargs{

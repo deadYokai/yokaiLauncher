@@ -40,7 +40,6 @@ FORMS += ui/dcon.ui
 FORMS += ui/melement.ui
 FORMS += ui/dirdialog.ui
 SOURCES += src/config_manager.cpp
-SOURCES += src/dirdialog.cpp
 SOURCES += src/melement.cpp
 SOURCES += src/launcher.cpp
 RESOURCES += res.qrc

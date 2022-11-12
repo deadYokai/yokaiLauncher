@@ -59,7 +59,7 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QWidget" name="verticalWidget" native="true">
+     <widget class="QWidget" name="verticalWidget_3" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
         <horstretch>0</horstretch>
@@ -163,22 +163,6 @@
                </property>
                <property name="margin">
                 <number>0</number>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="fabricb">
-               <property name="enabled">
-                <bool>true</bool>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>36</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Enable Fabric</string>
                </property>
               </widget>
              </item>
@@ -317,6 +301,19 @@
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QLabel" name="buildId">
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>12</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Build #111</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </item>
@@ -413,7 +410,7 @@
       </property>
       <property name="maximumSize">
        <size>
-        <width>64</width>
+        <width>72</width>
         <height>16777215</height>
        </size>
       </property>
@@ -440,7 +437,7 @@
          </property>
          <property name="maximumSize">
           <size>
-           <width>64</width>
+           <width>72</width>
            <height>16777215</height>
           </size>
          </property>
@@ -461,26 +458,42 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QPushButton" name="settb">
+           <widget class="QToolButton" name="settb">
             <property name="minimumSize">
              <size>
-              <width>64</width>
-              <height>64</height>
+              <width>72</width>
+              <height>72</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>64</width>
-              <height>64</height>
+              <width>72</width>
+              <height>72</height>
              </size>
             </property>
             <property name="toolTip">
              <string/>
             </property>
             <property name="text">
-             <string>S</string>
+             <string>Settings</string>
             </property>
-            <property name="flat">
+            <property name="icon">
+             <iconset resource="../res.qrc">
+              <normaloff>:/assets/settings.svg</normaloff>:/assets/settings.svg</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="shortcut">
+             <string/>
+            </property>
+            <property name="toolButtonStyle">
+             <enum>Qt::ToolButtonTextUnderIcon</enum>
+            </property>
+            <property name="autoRaise">
              <bool>true</bool>
             </property>
             <property name="menuPage" stdset="0">
@@ -503,7 +516,17 @@
              </size>
             </property>
             <property name="text">
-             <string>M</string>
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="../res.qrc">
+              <normaloff>:/assets/mods.svg</normaloff>:/assets/mods.svg</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
             </property>
             <property name="flat">
              <bool>true</bool>
@@ -539,23 +562,36 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="modloaderBtn">
+           <widget class="QToolButton" name="modloaderBtn">
             <property name="minimumSize">
              <size>
-              <width>64</width>
-              <height>64</height>
+              <width>72</width>
+              <height>72</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>64</width>
-              <height>64</height>
+              <width>72</width>
+              <height>72</height>
              </size>
             </property>
             <property name="text">
-             <string>ML</string>
+             <string>ModLoader</string>
             </property>
-            <property name="flat">
+            <property name="icon">
+             <iconset resource="../res.qrc">
+              <normaloff>:/assets/modloaders.svg</normaloff>:/assets/modloaders.svg</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="toolButtonStyle">
+             <enum>Qt::ToolButtonTextUnderIcon</enum>
+            </property>
+            <property name="autoRaise">
              <bool>true</bool>
             </property>
             <property name="menuPage" stdset="0">
@@ -1030,6 +1066,21 @@ ________________</string>
            </item>
            <item>
             <widget class="QRadioButton" name="rNone">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
              <property name="text">
               <string>None</string>
              </property>
@@ -1043,6 +1094,21 @@ ________________</string>
            </item>
            <item>
             <widget class="QRadioButton" name="rQuilt">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
              <property name="text">
               <string>Quilt</string>
              </property>
@@ -1066,6 +1132,18 @@ ________________</string>
            </item>
            <item>
             <widget class="QRadioButton" name="rFabric">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>64</height>
+              </size>
+             </property>
              <property name="text">
               <string>Fabric</string>
              </property>
@@ -1086,6 +1164,18 @@ ________________</string>
            </item>
            <item>
             <widget class="QRadioButton" name="rForge">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>64</height>
+              </size>
+             </property>
              <property name="text">
               <string>Forge</string>
              </property>
