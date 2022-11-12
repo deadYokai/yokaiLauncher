@@ -3,7 +3,7 @@
 Launcher is developing on C/C++ using Qt6;
 
 ### Screenshot (Beta 2):
-![Menu](https://s1.vilafox.xyz/resources/ghs.png)
+![Menu](https://s1.vilafox.xyz/resources/ghs.png#beta2)
 
 ## Build:
 
